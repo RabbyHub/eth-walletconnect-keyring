@@ -491,6 +491,10 @@ class WalletConnectKeyring extends EventEmitter {
     return this.accounts.map((acct) => acct.address).slice();
   }
 
+  async getAccountsWithBrand(): Promise<Account[]> {
+    return this.accounts;
+  }
+
   removeAccount(address: string, brandName: string): void {
     if (
       !this.accounts.find(
