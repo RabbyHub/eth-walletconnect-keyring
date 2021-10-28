@@ -125,11 +125,14 @@ class WalletConnectKeyring extends EventEmitter {
   };
 
   createConnector = async (bridge?: string) => {
+    if (localStorage.getItem('walletconnect')) {
+      // always clear walletconnect cache
+      localStorage.removeItem('walletconnect');
+    }
     const connector = new WalletConnect({
       bridge: bridge || DEFAULT_BRIDGE,
       clientMeta: this.clientMeta!,
     });
-
     connector.on('connect', (error, payload) => {
       if (payload?.params[0]?.accounts) {
         const [account] = payload.params[0].accounts;
@@ -227,9 +230,11 @@ class WalletConnectKeyring extends EventEmitter {
     const prefixedAddress = addHexPrefix(this.accountToAdd.address);
 
     if (
-      this.accounts
-        .map((x) => x.address.toLowerCase())
-        .includes(prefixedAddress.toLowerCase())
+      this.accounts.find(
+        (acct) =>
+          acct.address.toLowerCase() === prefixedAddress.toLowerCase() &&
+          acct.brandName === this.accountToAdd?.brandName
+      )
     ) {
       throw new Error("The address you're are trying to import is duplicate");
     }

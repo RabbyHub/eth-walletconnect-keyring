@@ -80,6 +80,10 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             return connector;
         });
         this.createConnector = (bridge) => __awaiter(this, void 0, void 0, function* () {
+            if (localStorage.getItem('walletconnect')) {
+                // always clear walletconnect cache
+                localStorage.removeItem('walletconnect');
+            }
             const connector = new client_1.default({
                 bridge: bridge || exports.DEFAULT_BRIDGE,
                 clientMeta: this.clientMeta,
@@ -165,9 +169,11 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 throw new Error("The address you're are trying to import is invalid");
             }
             const prefixedAddress = (0, ethereumjs_util_1.addHexPrefix)(this.accountToAdd.address);
-            if (this.accounts
-                .map((x) => x.address.toLowerCase())
-                .includes(prefixedAddress.toLowerCase())) {
+            if (this.accounts.find((acct) => {
+                var _a;
+                return acct.address.toLowerCase() === prefixedAddress.toLowerCase() &&
+                    acct.brandName === ((_a = this.accountToAdd) === null || _a === void 0 ? void 0 : _a.brandName);
+            })) {
                 throw new Error("The address you're are trying to import is duplicate");
             }
             this.accounts.push({
@@ -356,6 +362,11 @@ class WalletConnectKeyring extends events_1.EventEmitter {
     getAccounts() {
         return __awaiter(this, void 0, void 0, function* () {
             return this.accounts.map((acct) => acct.address).slice();
+        });
+    }
+    getAccountsWithBrand() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.accounts;
         });
     }
     removeAccount(address, brandName) {
