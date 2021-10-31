@@ -59,7 +59,7 @@ class WalletConnectKeyring extends EventEmitter {
   onAfterConnect: null | ((err?: any, payload?: any) => void) = null;
   onDisconnect: null | ((err: any, payload: any) => void) = null;
   currentConnectStatus: number = WALLETCONNECT_STATUS_MAP.PENDING;
-  maxDuration = 21600000; // 6 hour by default
+  maxDuration = 1800000; // 30 mins hour by default
   clientMeta: IClientMeta | null = null;
   currentConnector: Connector | null = null;
   connectors: Record<string, Connector> = {};
