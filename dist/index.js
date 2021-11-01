@@ -61,7 +61,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             this.onAfterConnect = (error, payload) => {
                 const [account] = payload.params[0].accounts;
                 address = account;
-                this.connectors[address.toLowerCase()] = {
+                this.connectors[`${brandName}-${address.toLowerCase()}`] = {
                     status: exports.WALLETCONNECT_STATUS_MAP.CONNECTED,
                     connector,
                     chainId: payload.params[0].chainId,
@@ -71,9 +71,9 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             };
             this.onDisconnect = (error, payload) => {
                 if (address) {
-                    const connector = this.connectors[address.toLowerCase()];
+                    const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
                     if (connector) {
-                        this.closeConnector(connector.connector, address);
+                        this.closeConnector(connector.connector, address, brandName);
                     }
                 }
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, null, error || payload.params[0]);
@@ -93,7 +93,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 var _a, _b;
                 if ((_a = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _a === void 0 ? void 0 : _a.accounts) {
                     const [account] = payload.params[0].accounts;
-                    this.connectors[account.toLowerCase()] = {
+                    this.connectors[`${brandName}-${account.toLowerCase()}`] = {
                         connector,
                         status: connector.connected
                             ? exports.WALLETCONNECT_STATUS_MAP.CONNECTED
@@ -102,7 +102,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                         brandName,
                     };
                     setTimeout(() => {
-                        this.closeConnector(connector, account.address);
+                        this.closeConnector(connector, account.address, brandName);
                     }, this.maxDuration);
                 }
                 this.onAfterConnect && this.onAfterConnect(error, payload);
@@ -113,7 +113,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             yield connector.createSession();
             return connector;
         });
-        this.closeConnector = (connector, address) => __awaiter(this, void 0, void 0, function* () {
+        this.closeConnector = (connector, address, brandName) => __awaiter(this, void 0, void 0, function* () {
             try {
                 connector.transportClose();
                 if (connector.connected) {
@@ -123,7 +123,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             catch (e) {
                 // NOTHING
             }
-            delete this.connectors[address];
+            delete this.connectors[`${brandName}-${address.toLowerCase()}`];
         });
         this.init = (address, brandName) => __awaiter(this, void 0, void 0, function* () {
             if (localStorage.getItem('walletconnect')) {
@@ -134,7 +134,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             if (!account) {
                 throw new Error('Can not find this address');
             }
-            let connector = this.connectors[account.address.toLowerCase()];
+            let connector = this.connectors[`${brandName}-${account.address.toLowerCase()}`];
             if (!connector || !connector.connector.connected) {
                 const newConnector = yield this.createConnector(brandName, account.bridge);
                 connector = {
@@ -159,7 +159,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             return connector;
         });
         this.getConnectorStatus = (address, brandName) => {
-            const connector = this.connectors[address.toLowerCase()];
+            const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
             if (connector) {
                 return connector.status;
             }
@@ -254,7 +254,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 if (!this.currentConnector)
                     throw new Error('No connector avaliable');
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, error || payload.params[0]);
-                this.closeConnector(this.currentConnector.connector, address);
+                this.closeConnector(this.currentConnector.connector, address, brandName);
             };
             yield this.init(account.address, account.brandName);
             return new Promise((resolve, reject) => {
@@ -303,7 +303,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 if (!this.currentConnector)
                     throw new Error('No connector avaliable');
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, error || payload.params[0]);
-                this.closeConnector(this.currentConnector.connector, address);
+                this.closeConnector(this.currentConnector.connector, address, brandName);
             };
             yield this.init(account.address, account.brandName);
             return new Promise((resolve) => {
@@ -354,7 +354,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 if (!this.currentConnector)
                     throw new Error('No connector avaliable');
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, account, error || payload.params[0]);
-                this.closeConnector(this.currentConnector.connector, address);
+                this.closeConnector(this.currentConnector.connector, address, brandName);
             };
             yield this.init(account.address, account.brandName);
             return new Promise((resolve) => {
