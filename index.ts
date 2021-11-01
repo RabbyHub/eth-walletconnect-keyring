@@ -46,6 +46,7 @@ type ValueOf<T> = T[keyof T];
 interface Connector {
   connector: WalletConnect;
   status: ValueOf<typeof WALLETCONNECT_STATUS_MAP>;
+  brandName: string;
   chainId?: number;
 }
 
@@ -91,9 +92,9 @@ class WalletConnectKeyring extends EventEmitter {
     };
   };
 
-  initConnector = async (bridge?: string) => {
+  initConnector = async (brandName: string, bridge?: string) => {
     let address: string | null = null;
-    const connector = await this.createConnector(bridge);
+    const connector = await this.createConnector(brandName, bridge);
     this.onAfterConnect = (error, payload) => {
       const [account] = payload.params[0].accounts;
       address = account;
@@ -101,6 +102,7 @@ class WalletConnectKeyring extends EventEmitter {
         status: WALLETCONNECT_STATUS_MAP.CONNECTED,
         connector,
         chainId: payload.params[0].chainId,
+        brandName,
       };
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.CONNECTED,
@@ -124,7 +126,7 @@ class WalletConnectKeyring extends EventEmitter {
     return connector;
   };
 
-  createConnector = async (bridge?: string) => {
+  createConnector = async (brandName: string, bridge?: string) => {
     if (localStorage.getItem('walletconnect')) {
       // always clear walletconnect cache
       localStorage.removeItem('walletconnect');
@@ -142,6 +144,7 @@ class WalletConnectKeyring extends EventEmitter {
             ? WALLETCONNECT_STATUS_MAP.CONNECTED
             : WALLETCONNECT_STATUS_MAP.PENDING,
           chainId: payload?.params[0]?.chainId,
+          brandName,
         };
         setTimeout(() => {
           this.closeConnector(connector, account.address);
@@ -188,10 +191,11 @@ class WalletConnectKeyring extends EventEmitter {
 
     let connector = this.connectors[account.address.toLowerCase()];
     if (!connector || !connector.connector.connected) {
-      const newConnector = await this.createConnector(account.bridge);
+      const newConnector = await this.createConnector(brandName, account.bridge);
       connector = {
         connector: newConnector,
         status: WALLETCONNECT_STATUS_MAP.PENDING,
+        brandName,
       };
     }
 

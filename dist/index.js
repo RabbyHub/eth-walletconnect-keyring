@@ -48,16 +48,16 @@ class WalletConnectKeyring extends events_1.EventEmitter {
         this.onAfterConnect = null;
         this.onDisconnect = null;
         this.currentConnectStatus = exports.WALLETCONNECT_STATUS_MAP.PENDING;
-        this.maxDuration = 21600000; // 6 hour by default
+        this.maxDuration = 1800000; // 30 mins hour by default
         this.clientMeta = null;
         this.currentConnector = null;
         this.connectors = {};
         this.setAccountToAdd = (account) => {
             this.accountToAdd = Object.assign(Object.assign({}, account), { address: account.address.toLowerCase() });
         };
-        this.initConnector = (bridge) => __awaiter(this, void 0, void 0, function* () {
+        this.initConnector = (brandName, bridge) => __awaiter(this, void 0, void 0, function* () {
             let address = null;
-            const connector = yield this.createConnector(bridge);
+            const connector = yield this.createConnector(brandName, bridge);
             this.onAfterConnect = (error, payload) => {
                 const [account] = payload.params[0].accounts;
                 address = account;
@@ -65,6 +65,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     status: exports.WALLETCONNECT_STATUS_MAP.CONNECTED,
                     connector,
                     chainId: payload.params[0].chainId,
+                    brandName,
                 };
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.CONNECTED, null, account);
             };
@@ -79,7 +80,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             };
             return connector;
         });
-        this.createConnector = (bridge) => __awaiter(this, void 0, void 0, function* () {
+        this.createConnector = (brandName, bridge) => __awaiter(this, void 0, void 0, function* () {
             if (localStorage.getItem('walletconnect')) {
                 // always clear walletconnect cache
                 localStorage.removeItem('walletconnect');
@@ -98,6 +99,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                             ? exports.WALLETCONNECT_STATUS_MAP.CONNECTED
                             : exports.WALLETCONNECT_STATUS_MAP.PENDING,
                         chainId: (_b = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _b === void 0 ? void 0 : _b.chainId,
+                        brandName,
                     };
                     setTimeout(() => {
                         this.closeConnector(connector, account.address);
@@ -134,10 +136,11 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             }
             let connector = this.connectors[account.address.toLowerCase()];
             if (!connector || !connector.connector.connected) {
-                const newConnector = yield this.createConnector(account.bridge);
+                const newConnector = yield this.createConnector(brandName, account.bridge);
                 connector = {
                     connector: newConnector,
                     status: exports.WALLETCONNECT_STATUS_MAP.PENDING,
+                    brandName,
                 };
             }
             if (connector.connector.connected) {
