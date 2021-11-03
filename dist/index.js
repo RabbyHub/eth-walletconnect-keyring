@@ -130,7 +130,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 // always clear walletconnect cache
                 localStorage.removeItem('walletconnect');
             }
-            const account = this.accounts.find((acc) => acc.address === address && acc.brandName === brandName);
+            const account = this.accounts.find((acc) => acc.address.toLowerCase() === address.toLowerCase() &&
+                acc.brandName === brandName);
             if (!account) {
                 throw new Error('Can not find this address');
             }
@@ -206,7 +207,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
     // pull the transaction current state, then resolve or reject
     signTransaction(address, transaction, { brandName = 'JADE' }) {
         return __awaiter(this, void 0, void 0, function* () {
-            const account = this.accounts.find((acct) => acct.address === address && acct.brandName === brandName);
+            const account = this.accounts.find((acct) => acct.address.toLowerCase() === address.toLowerCase() &&
+                acct.brandName === brandName);
             if (!account) {
                 throw new Error('Can not find this address');
             }
@@ -265,7 +267,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
     }
     signPersonalMessage(address, message, { brandName = 'JADE' }) {
         return __awaiter(this, void 0, void 0, function* () {
-            const account = this.accounts.find((acct) => acct.address === address && acct.brandName === brandName);
+            const account = this.accounts.find((acct) => acct.address.toLowerCase() === address.toLowerCase() &&
+                acct.brandName === brandName);
             if (!account) {
                 throw new Error('Can not find this address');
             }
@@ -313,7 +316,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
     }
     signTypedData(address, data, { brandName = 'JADE' }) {
         return __awaiter(this, void 0, void 0, function* () {
-            const account = this.accounts.find((acct) => acct.address === address && acct.brandName === brandName);
+            const account = this.accounts.find((acct) => acct.address.toLowerCase() === address.toLowerCase() &&
+                acct.brandName === brandName);
             if (!account) {
                 throw new Error('Can not find this address');
             }

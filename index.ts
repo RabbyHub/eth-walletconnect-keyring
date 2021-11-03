@@ -188,7 +188,9 @@ class WalletConnectKeyring extends EventEmitter {
     }
 
     const account = this.accounts.find(
-      (acc) => acc.address === address && acc.brandName === brandName
+      (acc) =>
+        acc.address.toLowerCase() === address.toLowerCase() &&
+        acc.brandName === brandName
     );
 
     if (!account) {
@@ -270,7 +272,9 @@ class WalletConnectKeyring extends EventEmitter {
     { brandName = 'JADE' }: { brandName: string }
   ) {
     const account = this.accounts.find(
-      (acct) => acct.address === address && acct.brandName === brandName
+      (acct) =>
+        acct.address.toLowerCase() === address.toLowerCase() &&
+        acct.brandName === brandName
     );
     if (!account) {
       throw new Error('Can not find this address');
@@ -361,7 +365,9 @@ class WalletConnectKeyring extends EventEmitter {
     { brandName = 'JADE' }: { brandName: string }
   ) {
     const account = this.accounts.find(
-      (acct) => acct.address === address && acct.brandName === brandName
+      (acct) =>
+        acct.address.toLowerCase() === address.toLowerCase() &&
+        acct.brandName === brandName
     );
     if (!account) {
       throw new Error('Can not find this address');
@@ -430,7 +436,9 @@ class WalletConnectKeyring extends EventEmitter {
     { brandName = 'JADE' }: { brandName: string }
   ) {
     const account = this.accounts.find(
-      (acct) => acct.address === address && acct.brandName === brandName
+      (acct) =>
+        acct.address.toLowerCase() === address.toLowerCase() &&
+        acct.brandName === brandName
     );
     if (!account) {
       throw new Error('Can not find this address');
