@@ -67,6 +67,12 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     chainId: payload.params[0].chainId,
                     brandName,
                 };
+                this.currentConnector = {
+                    status: exports.WALLETCONNECT_STATUS_MAP.CONNECTED,
+                    connector,
+                    chainId: payload.params[0].chainId,
+                    brandName,
+                };
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.CONNECTED, null, account);
             };
             this.onDisconnect = (error, payload) => {
