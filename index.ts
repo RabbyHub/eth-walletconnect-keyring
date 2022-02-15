@@ -17,7 +17,7 @@ export const WALLETCONNECT_STATUS_MAP = {
   FAILD: 6,
 };
 
-export const DEFAULT_BRIDGE = 'https://wcbridge.rabby.io';
+export const DEFAULT_BRIDGE = 'https://bridge.walletconnect.org';
 
 function sanitizeHex(hex: string): string {
   hex = hex.substring(0, 2) === '0x' ? hex.substring(2) : hex;
