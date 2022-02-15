@@ -28,7 +28,7 @@ exports.WALLETCONNECT_STATUS_MAP = {
     REJECTED: 5,
     FAILD: 6,
 };
-exports.DEFAULT_BRIDGE = 'https://wcbridge.rabby.io';
+exports.DEFAULT_BRIDGE = 'https://bridge.walletconnect.org';
 function sanitizeHex(hex) {
     hex = hex.substring(0, 2) === '0x' ? hex.substring(2) : hex;
     if (hex === '') {
