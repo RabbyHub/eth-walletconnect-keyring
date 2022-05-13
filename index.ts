@@ -184,7 +184,9 @@ class WalletConnectKeyring extends EventEmitter {
     } catch (e) {
       // NOTHING
     }
-    delete this.connectors[`${brandName}-${address.toLowerCase()}`];
+    if (address) {
+      delete this.connectors[`${brandName}-${address.toLowerCase()}`];
+    }
   };
 
   init = async (address: string, brandName: string) => {
