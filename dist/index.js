@@ -220,6 +220,17 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             if (!account) {
                 throw new Error("Can not find this address");
             }
+            const txData = {
+                to: transaction.to.toString(),
+                value: `0x${transaction.value.toString('hex')}`,
+                data: `0x${transaction.data.toString('hex')}`,
+                nonce: `0x${transaction.nonce.toString('hex')}`,
+                gasLimit: `0x${transaction.gasLimit.toString('hex')}`,
+                gasPrice: `0x${transaction.gasPrice
+                    ? transaction.gasPrice.toString('hex')
+                    : transaction.maxFeePerGas.toString('hex')}`,
+            };
+            const txChainId = transaction.common.chainIdBN().toNumber();
             this.onAfterConnect = (error, payload) => __awaiter(this, void 0, void 0, function* () {
                 if (error) {
                     this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, account, error);
@@ -234,7 +245,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 if (payload) {
                     const { accounts, chainId } = payload.params[0];
                     if (accounts[0].toLowerCase() !== address.toLowerCase() ||
-                        chainId !== transaction.getChainId()) {
+                        chainId !== txChainId) {
                         this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, account, {
                             message: "Wrong address or chainId",
                             code: accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001,
@@ -245,13 +256,13 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 }
                 try {
                     const result = yield this.currentConnector.connector.sendTransaction({
-                        data: this._normalize(transaction.data),
+                        data: this._normalize(txData.data),
                         from: address,
-                        gas: this._normalize(transaction.gas),
-                        gasPrice: this._normalize(transaction.gasPrice),
-                        nonce: this._normalize(transaction.nonce),
-                        to: this._normalize(transaction.to),
-                        value: this._normalize(transaction.value) || "0x0", // prevent 0x
+                        gas: this._normalize(txData.gasLimit),
+                        gasPrice: this._normalize(txData.gasPrice),
+                        nonce: this._normalize(txData.nonce),
+                        to: this._normalize(txData.to),
+                        value: this._normalize(txData.value) || "0x0", // prevent 0x
                     });
                     this.resolvePromise(result);
                     this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.SIBMITTED, account, result);
@@ -410,8 +421,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             payload,
         });
     }
-    _normalize(buf) {
-        return sanitizeHex((0, ethereumjs_util_1.bufferToHex)(buf).toString());
+    _normalize(str) {
+        return sanitizeHex(str);
     }
 }
 WalletConnectKeyring.type = exports.keyringType;
