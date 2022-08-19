@@ -87,7 +87,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             return connector;
         });
         this.createConnector = (brandName, bridge) => __awaiter(this, void 0, void 0, function* () {
-            if (localStorage.getItem("walletconnect")) {
+            if ((0, utils_1.isBrowser)() && localStorage.getItem("walletconnect")) {
                 // always clear walletconnect cache
                 localStorage.removeItem("walletconnect");
             }
@@ -116,6 +116,11 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             connector.on("disconnect", (error, payload) => {
                 this.onDisconnect && this.onDisconnect(error, payload);
             });
+            connector.on("transport_error", (error, payload) => {
+                this.emit('transport_error', payload);
+                // address is not necessary to close connection
+                this.closeConnector(connector, '0x', brandName);
+            });
             yield connector.createSession();
             return connector;
         });
@@ -134,7 +139,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             }
         });
         this.init = (address, brandName) => __awaiter(this, void 0, void 0, function* () {
-            if (localStorage.getItem("walletconnect")) {
+            if ((0, utils_1.isBrowser)() && localStorage.getItem("walletconnect")) {
                 // always clear walletconnect cache
                 localStorage.removeItem("walletconnect");
             }
