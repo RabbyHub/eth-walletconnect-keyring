@@ -5,7 +5,7 @@ import { addHexPrefix, bufferToHex } from "ethereumjs-util";
 import WalletConnect from "@walletconnect/client";
 import { IClientMeta } from "@walletconnect/types";
 import { TypedTransaction, JsonTx, Transaction, FeeMarketEIP1559Transaction } from '@ethereumjs/tx';
-import { wait } from "./utils";
+import { isBrowser, wait } from "./utils";
 
 export const keyringType = "WalletConnect";
 
@@ -135,7 +135,7 @@ class WalletConnectKeyring extends EventEmitter {
   };
 
   createConnector = async (brandName: string, bridge?: string) => {
-    if (localStorage.getItem("walletconnect")) {
+    if (isBrowser() && localStorage.getItem("walletconnect")) {
       // always clear walletconnect cache
       localStorage.removeItem("walletconnect");
     }
@@ -196,7 +196,7 @@ class WalletConnectKeyring extends EventEmitter {
   };
 
   init = async (address: string, brandName: string) => {
-    if (localStorage.getItem("walletconnect")) {
+    if (isBrowser() && localStorage.getItem("walletconnect")) {
       // always clear walletconnect cache
       localStorage.removeItem("walletconnect");
     }
