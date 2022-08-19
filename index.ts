@@ -166,6 +166,12 @@ class WalletConnectKeyring extends EventEmitter {
       this.onDisconnect && this.onDisconnect(error, payload);
     });
 
+    connector.on("transport_error", (error, payload) => {
+      this.emit('transport_error', payload);
+      // address is not necessary to close connection
+      this.closeConnector(connector, '0x', brandName);
+    });
+
     await connector.createSession();
 
     return connector;
