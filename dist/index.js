@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_BRIDGE = exports.WALLETCONNECT_STATUS_MAP = exports.keyringType = void 0;
+exports.OLD_DEFAULT_BRIDGE = exports.DEFAULT_BRIDGE = exports.WALLETCONNECT_STATUS_MAP = exports.keyringType = void 0;
 // https://github.com/MetaMask/eth-simple-keyring#the-keyring-class-protocol
 const events_1 = require("events");
 const web3_utils_1 = require("web3-utils");
@@ -29,6 +29,7 @@ exports.WALLETCONNECT_STATUS_MAP = {
     FAILD: 6,
 };
 exports.DEFAULT_BRIDGE = "https://wallet.rabby.io:10086/";
+exports.OLD_DEFAULT_BRIDGE = "https://bridge.walletconnect.org";
 function sanitizeHex(hex) {
     hex = hex.substring(0, 2) === "0x" ? hex.substring(2) : hex;
     if (hex === "") {
@@ -86,13 +87,13 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             };
             return connector;
         });
-        this.createConnector = (brandName, bridge) => __awaiter(this, void 0, void 0, function* () {
+        this.createConnector = (brandName, bridge = exports.DEFAULT_BRIDGE) => __awaiter(this, void 0, void 0, function* () {
             if ((0, utils_1.isBrowser)() && localStorage.getItem("walletconnect")) {
                 // always clear walletconnect cache
                 localStorage.removeItem("walletconnect");
             }
             const connector = new client_1.default({
-                bridge: bridge || exports.DEFAULT_BRIDGE,
+                bridge: bridge === exports.OLD_DEFAULT_BRIDGE ? exports.DEFAULT_BRIDGE : bridge,
                 clientMeta: this.clientMeta,
             });
             connector.on("connect", (error, payload) => {
