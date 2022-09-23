@@ -19,6 +19,7 @@ export const WALLETCONNECT_STATUS_MAP = {
 };
 
 export const DEFAULT_BRIDGE = "https://wallet.rabby.io:10086/";
+export const OLD_DEFAULT_BRIDGE = "https://bridge.walletconnect.org";
 
 function sanitizeHex(hex: string): string {
   hex = hex.substring(0, 2) === "0x" ? hex.substring(2) : hex;
@@ -134,13 +135,13 @@ class WalletConnectKeyring extends EventEmitter {
     return connector;
   };
 
-  createConnector = async (brandName: string, bridge?: string) => {
+  createConnector = async (brandName: string, bridge = DEFAULT_BRIDGE) => {
     if (isBrowser() && localStorage.getItem("walletconnect")) {
       // always clear walletconnect cache
       localStorage.removeItem("walletconnect");
     }
     const connector = new WalletConnect({
-      bridge: bridge || DEFAULT_BRIDGE,
+      bridge: bridge === OLD_DEFAULT_BRIDGE ? DEFAULT_BRIDGE : bridge,
       clientMeta: this.clientMeta!,
     });
     connector.on("connect", (error, payload) => {
