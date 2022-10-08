@@ -18,8 +18,8 @@ export const WALLETCONNECT_STATUS_MAP = {
   FAILD: 6,
 };
 
-export const DEFAULT_BRIDGE = "https://wallet.rabby.io:10086/";
-export const OLD_DEFAULT_BRIDGE = "https://bridge.walletconnect.org";
+export const DEFAULT_BRIDGE = "https://bridge.walletconnect.org";
+export const OLD_DEFAULT_BRIDGE = "https://wallet.rabby.io:10086/";
 
 function sanitizeHex(hex: string): string {
   hex = hex.substring(0, 2) === "0x" ? hex.substring(2) : hex;
