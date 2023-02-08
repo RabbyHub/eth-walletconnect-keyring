@@ -12,7 +12,7 @@ import {
 import SignClient from '@walletconnect/sign-client';
 import { getSdkError } from '@walletconnect/utils';
 import { getRequiredNamespaces } from './helper';
-import { isBrowser, wait } from 'utils';
+import { isBrowser, wait } from './utils';
 
 export const keyringType = 'WalletConnect';
 
