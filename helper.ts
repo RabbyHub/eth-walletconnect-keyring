@@ -1,20 +1,12 @@
 import { ProposalTypes } from '@walletconnect/types';
 
-export const wait = (fn: () => void, ms = 1000) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      fn();
-      resolve(true);
-    }, ms);
-  });
-};
 const DEFAULT_MAIN_CHAINS = [
   'eip155:1',
   'eip155:10',
   'eip155:100',
   'eip155:137',
   'eip155:42161',
-  'eip155:42220',
+  'eip155:42220'
 ];
 
 export const getNamespacesFromChains = (chains: string[]) => {
@@ -37,12 +29,12 @@ export enum DEFAULT_EIP155_METHODS {
   ETH_SIGN_TRANSACTION = 'eth_signTransaction',
   ETH_SIGN = 'eth_sign',
   PERSONAL_SIGN = 'personal_sign',
-  ETH_SIGN_TYPED_DATA = 'eth_signTypedData',
+  ETH_SIGN_TYPED_DATA = 'eth_signTypedData'
 }
 
 export enum DEFAULT_EIP_155_EVENTS {
   ETH_CHAIN_CHANGED = 'chainChanged',
-  ETH_ACCOUNTS_CHANGED = 'accountsChanged',
+  ETH_ACCOUNTS_CHANGED = 'accountsChanged'
 }
 
 export const getSupportedMethodsByNamespace = (namespace: string) => {
@@ -75,8 +67,8 @@ export const getRequiredNamespaces = (
       {
         methods: getSupportedMethodsByNamespace(namespace),
         chains: chains.filter((chain) => chain.startsWith(namespace)),
-        events: getSupportedEventsByNamespace(namespace) as any[],
-      },
+        events: getSupportedEventsByNamespace(namespace) as any[]
+      }
     ])
   );
 };

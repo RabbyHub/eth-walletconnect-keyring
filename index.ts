@@ -11,9 +11,8 @@ import {
 } from '@ethereumjs/tx';
 import SignClient from '@walletconnect/sign-client';
 import { getSdkError } from '@walletconnect/utils';
-import { getRequiredNamespaces, wait } from './helper';
-
-export const isBrowser = () => typeof window !== 'undefined';
+import { getRequiredNamespaces } from './helper';
+import { isBrowser, wait } from 'utils';
 
 export const keyringType = 'WalletConnect';
 
