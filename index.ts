@@ -1,13 +1,18 @@
 // https://github.com/MetaMask/eth-simple-keyring#the-keyring-class-protocol
-import { EventEmitter } from "events";
-import { isAddress } from "web3-utils";
-import { addHexPrefix, bufferToHex } from "ethereumjs-util";
-import WalletConnect from "@walletconnect/client";
-import { IClientMeta } from "@walletconnect/types";
-import { TypedTransaction, JsonTx, Transaction, FeeMarketEIP1559Transaction } from '@ethereumjs/tx';
-import { isBrowser, wait } from "./utils";
+import { EventEmitter } from 'events';
+import { isAddress } from 'web3-utils';
+import { AccountData, addHexPrefix, bufferToHex } from 'ethereumjs-util';
+import WalletConnect from '@debank/wc-client';
+import { IClientMeta } from '@debank/wc-types';
+import {
+  TypedTransaction,
+  JsonTx,
+  Transaction,
+  FeeMarketEIP1559Transaction
+} from '@ethereumjs/tx';
+import { isBrowser, wait } from './utils';
 
-export const keyringType = "WalletConnect";
+export const keyringType = 'WalletConnect';
 
 export const WALLETCONNECT_STATUS_MAP = {
   PENDING: 1,
@@ -15,19 +20,28 @@ export const WALLETCONNECT_STATUS_MAP = {
   WAITING: 3,
   SIBMITTED: 4,
   REJECTED: 5,
-  FAILD: 6,
+  FAILD: 6
 };
 
-export const DEFAULT_BRIDGE = "https://bridge.walletconnect.org";
-export const OLD_DEFAULT_BRIDGE = "https://wallet.rabby.io:10086/";
+export const WALLETCONNECT_SESSION_STATUS_MAP = {
+  CONNECTED: 'CONNECTED',
+  DISCONNECTED: 'DISCONNECTED',
+  RECEIVED: 'RECEIVED',
+  EXPIRED: 'EXPIRED',
+  ACCOUNT_ERROR: 'ACCOUNT_ERROR',
+  CHAIN_ERROR: 'CHAIN_ERROR',
+  BRAND_NAME_ERROR: 'BRAND_NAME_ERROR'
+};
+
+export const DEFAULT_BRIDGE = 'https://derelay.rabby.io';
 
 function sanitizeHex(hex: string): string {
-  hex = hex.substring(0, 2) === "0x" ? hex.substring(2) : hex;
-  if (hex === "") {
-    return "";
+  hex = hex.substring(0, 2) === '0x' ? hex.substring(2) : hex;
+  if (hex === '') {
+    return '';
   }
-  hex = hex.length % 2 !== 0 ? "0" + hex : hex;
-  return "0x" + hex;
+  hex = hex.length % 2 !== 0 ? '0' + hex : hex;
+  return '0x' + hex;
 }
 
 export interface Account {
@@ -50,6 +64,7 @@ interface Connector {
   status: ValueOf<typeof WALLETCONNECT_STATUS_MAP>;
   brandName: string;
   chainId?: number;
+  sessionStatus?: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP;
 }
 
 class WalletConnectKeyring extends EventEmitter {
@@ -66,6 +81,7 @@ class WalletConnectKeyring extends EventEmitter {
   clientMeta: IClientMeta | null = null;
   currentConnector: Connector | null = null;
   connectors: Record<string, Connector> = {};
+  currentPeerId?: string;
 
   constructor(opts: ConstructorOptions) {
     super();
@@ -74,7 +90,7 @@ class WalletConnectKeyring extends EventEmitter {
 
   serialize() {
     return Promise.resolve({
-      accounts: this.accounts,
+      accounts: this.accounts
     });
   }
 
@@ -90,28 +106,26 @@ class WalletConnectKeyring extends EventEmitter {
   setAccountToAdd = (account: Account) => {
     this.accountToAdd = {
       ...account,
-      address: account.address.toLowerCase(),
+      address: account.address.toLowerCase()
     };
   };
 
   initConnector = async (brandName: string, bridge?: string) => {
     let address: string | null = null;
     const connector = await this.createConnector(brandName, bridge);
+
     this.onAfterConnect = (error, payload) => {
       const [account] = payload.params[0].accounts;
       address = account;
-      this.connectors[`${brandName}-${address!.toLowerCase()}`] = {
+      this.currentConnector = this.connectors[
+        `${brandName}-${address!.toLowerCase()}`
+      ] = {
         status: WALLETCONNECT_STATUS_MAP.CONNECTED,
         connector,
         chainId: payload.params[0].chainId,
         brandName,
-      };
-      this.currentConnector = {
-        status: WALLETCONNECT_STATUS_MAP.CONNECTED,
-        connector,
-        chainId: payload.params[0].chainId,
-        brandName,
-      };
+        sessionStatus: WALLETCONNECT_SESSION_STATUS_MAP.CONNECTED
+      } as Connector;
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.CONNECTED,
         null,
@@ -132,29 +146,66 @@ class WalletConnectKeyring extends EventEmitter {
         error || payload.params[0]
       );
     };
+
     return connector;
   };
 
+  getConnectorInfoByPeerId(peerId: string) {
+    const connectorKey = Object.keys(this.connectors).find(
+      (key) => this.connectors[key].connector.peerId === peerId
+    );
+    if (!connectorKey) {
+      return;
+    }
+
+    const [brandName, address] = connectorKey.split('-');
+    const account = this.accounts.find(
+      (acc) =>
+        acc.address.toLowerCase() === address.toLowerCase() &&
+        acc.brandName === brandName
+    )!;
+
+    return {
+      brandName,
+      address,
+      connectorKey,
+      account
+    };
+  }
+
   createConnector = async (brandName: string, bridge = DEFAULT_BRIDGE) => {
-    if (isBrowser() && localStorage.getItem("walletconnect")) {
+    if (isBrowser() && localStorage.getItem('walletconnect')) {
       // always clear walletconnect cache
-      localStorage.removeItem("walletconnect");
+      localStorage.removeItem('walletconnect');
     }
     const connector = new WalletConnect({
-      bridge: bridge === OLD_DEFAULT_BRIDGE ? DEFAULT_BRIDGE : bridge,
-      clientMeta: this.clientMeta!,
+      bridge,
+      clientMeta: this.clientMeta!
     });
-    connector.on("connect", (error, payload) => {
+    connector.on('connect', (error, payload) => {
       if (payload?.params[0]?.accounts) {
         const [account] = payload.params[0].accounts;
-        this.connectors[`${brandName}-${account.toLowerCase()}`] = {
-          connector,
-          status: connector.connected
-            ? WALLETCONNECT_STATUS_MAP.CONNECTED
-            : WALLETCONNECT_STATUS_MAP.PENDING,
-          chainId: payload?.params[0]?.chainId,
-          brandName,
-        };
+        const curr = (this.connectors[`${brandName}-${account.toLowerCase()}`] =
+          {
+            connector,
+            status: connector.connected
+              ? WALLETCONNECT_STATUS_MAP.CONNECTED
+              : WALLETCONNECT_STATUS_MAP.PENDING,
+            chainId: payload?.params[0]?.chainId,
+            brandName,
+            sessionStatus: 'CONNECTED'
+          } as Connector);
+
+        // check brandName
+        if (!this.checkBrandName(brandName, payload)) {
+          curr.sessionStatus = 'BRAND_NAME_ERROR';
+          this.updateSessionStatus('BRAND_NAME_ERROR');
+
+          return;
+        }
+
+        this.updateSessionStatus('CONNECTED');
+
         setTimeout(() => {
           this.closeConnector(connector, account.address, brandName);
         }, this.maxDuration);
@@ -163,11 +214,73 @@ class WalletConnectKeyring extends EventEmitter {
       this.onAfterConnect && this.onAfterConnect(error, payload);
     });
 
-    connector.on("disconnect", (error, payload) => {
+    connector.on(
+      'session_update',
+      (
+        error,
+        payload: {
+          event: string;
+          params: {
+            accounts: string[];
+            chainId: number;
+          }[];
+        }
+      ) => {
+        const data = this.getConnectorInfoByPeerId(connector.peerId);
+        if (!data) return;
+        const { connectorKey, address: _address } = data;
+        const _chainId = this.connectors[connectorKey].chainId;
+        const updateAddress = payload.params[0].accounts[0];
+        const updateChain = payload.params[0].chainId;
+
+        if (updateAddress.toLowerCase() !== _address.toLowerCase()) {
+          this.connectors[connectorKey].sessionStatus = 'ACCOUNT_ERROR';
+          if (this.currentPeerId === connector.peerId) {
+            this.updateSessionStatus('ACCOUNT_ERROR');
+          }
+        } else if (updateChain !== _chainId) {
+          this.connectors[connectorKey].sessionStatus = 'CHAIN_ERROR';
+          if (this.currentPeerId === connector.peerId) {
+            this.updateSessionStatus('CHAIN_ERROR');
+          }
+        }
+      }
+    );
+
+    connector.on('session_received', (error, payload) => {
+      this.updateSessionStatus('RECEIVED');
+    });
+
+    connector.on('session_resumed', (error, payload) => {
+      const data = this.getConnectorInfoByPeerId(connector.peerId);
+      if (!data) return;
+      this.connectors[data.connectorKey].sessionStatus = 'CONNECTED';
+      if (this.currentPeerId === connector.peerId) {
+        this.updateSessionStatus('CONNECTED');
+      }
+    });
+
+    connector.on('session_suspended', (error, payload) => {
+      const data = this.getConnectorInfoByPeerId(connector.peerId);
+      if (!data) return;
+      this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
+      if (this.currentPeerId === connector.peerId) {
+        this.updateSessionStatus('DISCONNECTED');
+      }
+    });
+
+    connector.on('disconnect', (error, payload) => {
+      const data = this.getConnectorInfoByPeerId(connector.peerId);
+      if (!data) return;
+      this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
+      if (this.currentPeerId === connector.peerId) {
+        this.updateSessionStatus('DISCONNECTED');
+      }
+
       this.onDisconnect && this.onDisconnect(error, payload);
     });
 
-    connector.on("transport_error", (error, payload) => {
+    connector.on('transport_error', (error, payload) => {
       this.emit('transport_error', payload);
       // address is not necessary to close connection
       this.closeConnector(connector, '0x', brandName);
@@ -197,9 +310,9 @@ class WalletConnectKeyring extends EventEmitter {
   };
 
   init = async (address: string, brandName: string) => {
-    if (isBrowser() && localStorage.getItem("walletconnect")) {
+    if (isBrowser() && localStorage.getItem('walletconnect')) {
       // always clear walletconnect cache
-      localStorage.removeItem("walletconnect");
+      localStorage.removeItem('walletconnect');
     }
 
     const account = this.accounts.find(
@@ -209,7 +322,7 @@ class WalletConnectKeyring extends EventEmitter {
     );
 
     if (!account) {
-      throw new Error("Can not find this address");
+      throw new Error('Can not find this address');
     }
 
     let connector =
@@ -222,24 +335,24 @@ class WalletConnectKeyring extends EventEmitter {
       connector = {
         connector: newConnector,
         status: WALLETCONNECT_STATUS_MAP.PENDING,
-        brandName,
+        brandName
       };
     }
+
+    // make sure the connector is the latest one before trigger onAfterConnect
+    this.currentConnector = connector;
 
     if (connector.connector.connected) {
       connector.status = WALLETCONNECT_STATUS_MAP.CONNECTED;
       this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, account);
-      this.onAfterConnect &&
-        this.onAfterConnect(null, {
-          params: [{ accounts: [account.address], chainId: connector.chainId }],
-        });
+      this.onAfterConnect?.(null, {
+        params: [{ accounts: [account.address], chainId: connector.chainId }]
+      });
     } else {
       connector.status = WALLETCONNECT_STATUS_MAP.PENDING;
     }
 
-    this.currentConnector = connector;
-
-    this.emit("inited", connector.connector.uri);
+    this.emit('inited', connector.connector.uri);
 
     return connector;
   };
@@ -253,7 +366,7 @@ class WalletConnectKeyring extends EventEmitter {
   };
 
   addAccounts = async () => {
-    if (!this.accountToAdd) throw new Error("There is no address to add");
+    if (!this.accountToAdd) throw new Error('There is no address to add');
 
     if (!isAddress(this.accountToAdd.address)) {
       throw new Error("The address you're are trying to import is invalid");
@@ -273,7 +386,7 @@ class WalletConnectKeyring extends EventEmitter {
     this.accounts.push({
       address: prefixedAddress,
       brandName: this.accountToAdd.brandName,
-      bridge: this.accountToAdd.bridge || DEFAULT_BRIDGE,
+      bridge: this.accountToAdd.bridge || DEFAULT_BRIDGE
     });
 
     return [prefixedAddress];
@@ -283,7 +396,7 @@ class WalletConnectKeyring extends EventEmitter {
   async signTransaction(
     address,
     transaction: TypedTransaction,
-    { brandName = "JADE" }: { brandName: string }
+    { brandName = 'JADE' }: { brandName: string }
   ) {
     const account = this.accounts.find(
       (acct) =>
@@ -291,7 +404,7 @@ class WalletConnectKeyring extends EventEmitter {
         acct.brandName === brandName
     );
     if (!account) {
-      throw new Error("Can not find this address");
+      throw new Error('Can not find this address');
     }
 
     const txData: JsonTx = {
@@ -303,8 +416,10 @@ class WalletConnectKeyring extends EventEmitter {
       gasPrice: `0x${
         (transaction as Transaction).gasPrice
           ? (transaction as Transaction).gasPrice.toString('hex')
-          : (transaction as FeeMarketEIP1559Transaction).maxFeePerGas.toString('hex')
-      }`,
+          : (transaction as FeeMarketEIP1559Transaction).maxFeePerGas.toString(
+              'hex'
+            )
+      }`
     };
     const txChainId = transaction.common.chainIdBN().toNumber();
     this.onAfterConnect = async (error?, payload?) => {
@@ -317,7 +432,7 @@ class WalletConnectKeyring extends EventEmitter {
         return;
       }
 
-      if (!this.currentConnector) throw new Error("No connector avaliable");
+      if (!this.currentConnector) throw new Error('No connector avaliable');
 
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.CONNECTED,
@@ -340,9 +455,9 @@ class WalletConnectKeyring extends EventEmitter {
           chainId !== txChainId
         ) {
           this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.FAILD, account, {
-            message: "Wrong address or chainId",
+            message: 'Wrong address or chainId',
             code:
-              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001,
+              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001
           });
           return;
         }
@@ -356,7 +471,7 @@ class WalletConnectKeyring extends EventEmitter {
           gasPrice: this._normalize(txData.gasPrice),
           nonce: this._normalize(txData.nonce),
           to: this._normalize(txData.to),
-          value: this._normalize(txData.value) || "0x0", // prevent 0x
+          value: this._normalize(txData.value) || '0x0' // prevent 0x
         });
         this.resolvePromise!(result);
         this.updateCurrentStatus(
@@ -370,7 +485,7 @@ class WalletConnectKeyring extends EventEmitter {
     };
 
     this.onDisconnect = (error, payload) => {
-      if (!this.currentConnector) throw new Error("No connector avaliable");
+      if (!this.currentConnector) throw new Error('No connector avaliable');
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.FAILD,
         error || payload.params[0]
@@ -389,7 +504,7 @@ class WalletConnectKeyring extends EventEmitter {
   async signPersonalMessage(
     address: string,
     message: string,
-    { brandName = "JADE" }: { brandName: string }
+    { brandName = 'JADE' }: { brandName: string }
   ) {
     const account = this.accounts.find(
       (acct) =>
@@ -397,7 +512,7 @@ class WalletConnectKeyring extends EventEmitter {
         acct.brandName === brandName
     );
     if (!account) {
-      throw new Error("Can not find this address");
+      throw new Error('Can not find this address');
     }
 
     this.onAfterConnect = async (error?, payload?) => {
@@ -409,14 +524,14 @@ class WalletConnectKeyring extends EventEmitter {
         );
         return;
       }
-      if (!this.currentConnector) throw new Error("No connector avaliable");
+      if (!this.currentConnector) throw new Error('No connector avaliable');
       const { accounts } = payload.params[0];
       if (payload) {
         if (accounts[0].toLowerCase() !== address.toLowerCase()) {
           this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.FAILD, account, {
-            message: "Wrong address or chainId",
+            message: 'Wrong address or chainId',
             code:
-              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001,
+              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001
           });
           return;
         }
@@ -429,7 +544,7 @@ class WalletConnectKeyring extends EventEmitter {
         const result =
           await this.currentConnector.connector.signPersonalMessage([
             message,
-            address,
+            address
           ]);
         this.resolvePromise!(result);
         this.updateCurrentStatus(
@@ -443,7 +558,7 @@ class WalletConnectKeyring extends EventEmitter {
     };
 
     this.onDisconnect = (error, payload) => {
-      if (!this.currentConnector) throw new Error("No connector avaliable");
+      if (!this.currentConnector) throw new Error('No connector avaliable');
 
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.FAILD,
@@ -462,7 +577,7 @@ class WalletConnectKeyring extends EventEmitter {
   async signTypedData(
     address: string,
     data,
-    { brandName = "JADE" }: { brandName: string }
+    { brandName = 'JADE' }: { brandName: string }
   ) {
     const account = this.accounts.find(
       (acct) =>
@@ -470,7 +585,7 @@ class WalletConnectKeyring extends EventEmitter {
         acct.brandName === brandName
     );
     if (!account) {
-      throw new Error("Can not find this address");
+      throw new Error('Can not find this address');
     }
 
     this.onAfterConnect = async (error, payload) => {
@@ -483,15 +598,15 @@ class WalletConnectKeyring extends EventEmitter {
         return;
       }
 
-      if (!this.currentConnector) throw new Error("No connector avaliable");
+      if (!this.currentConnector) throw new Error('No connector avaliable');
 
       if (payload) {
         const { accounts } = payload.params[0];
         if (accounts[0].toLowerCase() !== address.toLowerCase()) {
           this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.FAILD, account, {
-            message: "Wrong address or chainId",
+            message: 'Wrong address or chainId',
             code:
-              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001,
+              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001
           });
           return;
         }
@@ -514,7 +629,7 @@ class WalletConnectKeyring extends EventEmitter {
 
         const result = await this.currentConnector.connector.signTypedData([
           address,
-          typeof data === "string" ? data : JSON.stringify(data),
+          typeof data === 'string' ? data : JSON.stringify(data)
         ]);
         this.resolvePromise!(result);
         this.updateCurrentStatus(
@@ -528,7 +643,7 @@ class WalletConnectKeyring extends EventEmitter {
     };
 
     this.onDisconnect = (error, payload) => {
-      if (!this.currentConnector) throw new Error("No connector avaliable");
+      if (!this.currentConnector) throw new Error('No connector avaliable');
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.FAILD,
         account,
@@ -582,15 +697,56 @@ class WalletConnectKeyring extends EventEmitter {
       return;
     }
     this.currentConnectStatus = status;
-    this.emit("statusChange", {
+    this.emit('statusChange', {
       status,
       account,
-      payload,
+      payload
+    });
+  }
+
+  updateSessionStatus(status: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP) {
+    this.emit('sessionStatusChange', {
+      status
     });
   }
 
   _normalize(str) {
     return sanitizeHex(str);
+  }
+
+  checkBrandName(brandName, payload) {
+    const name = payload.params[0].peerMeta.name;
+    // just check if brandName is in name or name is in brandName
+    const lowerName = name.toLowerCase();
+    const lowerBrandName = brandName.toLowerCase();
+    if (
+      lowerName.includes(lowerBrandName) ||
+      lowerBrandName.includes(lowerName)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  setCurrentAccount(address: string, brandName: string) {
+    const connector = this.connectors[`${brandName}-${address!.toLowerCase()}`];
+
+    if (!connector) {
+      return this.updateSessionStatus('DISCONNECTED');
+    }
+
+    this.currentPeerId = connector.connector.peerId;
+  }
+
+  getSessionStatus(address: string, brandName: string) {
+    const connector = this.connectors[`${brandName}-${address!.toLowerCase()}`];
+
+    if (!connector) {
+      return this.updateSessionStatus('DISCONNECTED');
+    }
+
+    return connector.sessionStatus;
   }
 }
 
