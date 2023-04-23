@@ -13,6 +13,7 @@ import {
 import { isBrowser, wait } from './utils';
 
 export const keyringType = 'WalletConnect';
+const COMMON_WALLETCONNECT = 'WALLETCONNECT';
 
 export const WALLETCONNECT_STATUS_MAP = {
   PENDING: 1,
@@ -48,6 +49,8 @@ export interface Account {
   brandName: string;
   address: string;
   bridge?: string;
+  realBrandName?: string;
+  realBrandUrl?: string;
 }
 
 interface ConstructorOptions {
@@ -59,12 +62,21 @@ interface ConstructorOptions {
 
 type ValueOf<T> = T[keyof T];
 
+type ConnectPayload = {
+  params: {
+    accounts: string[];
+    peerMeta: IClientMeta;
+    chainId: number;
+  }[];
+};
+
 interface Connector {
   connector: WalletConnect;
   status: ValueOf<typeof WALLETCONNECT_STATUS_MAP>;
   brandName: string;
   chainId?: number;
   sessionStatus?: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP;
+  peerMeta: IClientMeta;
 }
 
 class WalletConnectKeyring extends EventEmitter {
@@ -113,23 +125,26 @@ class WalletConnectKeyring extends EventEmitter {
     let address: string | null = null;
     const connector = await this.createConnector(brandName, bridge);
 
-    this.onAfterConnect = (error, payload) => {
+    this.onAfterConnect = (error, payload: ConnectPayload) => {
       const [account] = payload.params[0].accounts;
       address = account;
-      this.currentConnector = this.connectors[
-        `${brandName}-${address!.toLowerCase()}`
-      ] = {
-        status: WALLETCONNECT_STATUS_MAP.CONNECTED,
-        connector,
-        chainId: payload.params[0].chainId,
-        brandName,
-        sessionStatus: WALLETCONNECT_SESSION_STATUS_MAP.CONNECTED
-      } as Connector;
-      this.updateCurrentStatus(
-        WALLETCONNECT_STATUS_MAP.CONNECTED,
-        null,
+      const lowerAddress = address!.toLowerCase();
+      const conn = this.connectors[`${brandName}-${lowerAddress}`];
+
+      this.currentConnector = this.connectors[`${brandName}-${lowerAddress}`] =
+        {
+          ...conn,
+          status: WALLETCONNECT_STATUS_MAP.CONNECTED,
+          connector,
+          chainId: payload.params[0].chainId,
+          brandName,
+          sessionStatus: 'CONNECTED'
+        } as Connector;
+
+      this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, null, {
+        ...payload.params[0],
         account
-      );
+      });
     };
     this.onDisconnect = (error, payload) => {
       if (address) {
@@ -184,7 +199,7 @@ class WalletConnectKeyring extends EventEmitter {
     connector.on('connect', (error, payload) => {
       if (payload?.params[0]?.accounts) {
         const [account] = payload.params[0].accounts;
-        const curr = (this.connectors[`${brandName}-${account.toLowerCase()}`] =
+        const conn = (this.connectors[`${brandName}-${account.toLowerCase()}`] =
           {
             connector,
             status: connector.connected
@@ -192,12 +207,16 @@ class WalletConnectKeyring extends EventEmitter {
               : WALLETCONNECT_STATUS_MAP.PENDING,
             chainId: payload?.params[0]?.chainId,
             brandName,
-            sessionStatus: 'CONNECTED'
+            sessionStatus: 'CONNECTED',
+            peerMeta: payload?.params[0]?.peerMeta
           } as Connector);
 
         // check brandName
-        if (!this.checkBrandName(brandName, payload)) {
-          curr.sessionStatus = 'BRAND_NAME_ERROR';
+        if (
+          brandName !== COMMON_WALLETCONNECT &&
+          !this.checkBrandName(brandName, payload)
+        ) {
+          conn.sessionStatus = 'BRAND_NAME_ERROR';
           this.updateSessionStatus('BRAND_NAME_ERROR', {
             address: account,
             brandName
@@ -341,17 +360,17 @@ class WalletConnectKeyring extends EventEmitter {
       throw new Error('Can not find this address');
     }
 
-    let connector =
-      this.connectors[`${brandName}-${account.address.toLowerCase()}`];
-    if (!connector || !connector.connector.connected) {
+    const lowerAddress = account.address.toLowerCase();
+    let connector = this.connectors[`${brandName}-${lowerAddress}`];
+    if (!connector?.connector?.connected) {
       const newConnector = await this.createConnector(
         brandName,
         account.bridge
       );
       connector = {
+        ...this.connectors[`${brandName}-${lowerAddress}`],
         connector: newConnector,
-        status: WALLETCONNECT_STATUS_MAP.PENDING,
-        brandName
+        status: WALLETCONNECT_STATUS_MAP.PENDING
       };
     }
 
@@ -402,7 +421,9 @@ class WalletConnectKeyring extends EventEmitter {
     this.accounts.push({
       address: prefixedAddress,
       brandName: this.accountToAdd.brandName,
-      bridge: this.accountToAdd.bridge || DEFAULT_BRIDGE
+      bridge: this.accountToAdd.bridge || DEFAULT_BRIDGE,
+      realBrandName: this.accountToAdd.realBrandName,
+      realBrandUrl: this.accountToAdd.realBrandUrl
     });
 
     return [prefixedAddress];
@@ -765,6 +786,20 @@ class WalletConnectKeyring extends EventEmitter {
     }
 
     return connector.sessionStatus;
+  }
+
+  getCommonWalletConnectInfo(address: string) {
+    const account = this.accounts.find(
+      (acct) =>
+        acct.address.toLowerCase() === address.toLowerCase() &&
+        acct.brandName === COMMON_WALLETCONNECT
+    );
+
+    if (!account) {
+      return undefined;
+    }
+
+    return account;
   }
 }
 
