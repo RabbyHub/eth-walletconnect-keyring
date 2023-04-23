@@ -81,7 +81,6 @@ class WalletConnectKeyring extends EventEmitter {
   clientMeta: IClientMeta | null = null;
   currentConnector: Connector | null = null;
   connectors: Record<string, Connector> = {};
-  currentPeerId?: string;
 
   constructor(opts: ConstructorOptions) {
     super();
@@ -199,19 +198,25 @@ class WalletConnectKeyring extends EventEmitter {
         // check brandName
         if (!this.checkBrandName(brandName, payload)) {
           curr.sessionStatus = 'BRAND_NAME_ERROR';
-          this.updateSessionStatus('BRAND_NAME_ERROR');
-
+          this.updateSessionStatus('BRAND_NAME_ERROR', {
+            address: account,
+            brandName
+          });
+          this.onAfterConnect?.(error, payload);
           return;
         }
 
-        this.updateSessionStatus('CONNECTED');
+        this.updateSessionStatus('CONNECTED', {
+          address: account,
+          brandName
+        });
 
         setTimeout(() => {
           this.closeConnector(connector, account.address, brandName);
         }, this.maxDuration);
       }
 
-      this.onAfterConnect && this.onAfterConnect(error, payload);
+      this.onAfterConnect?.(error, payload);
     });
 
     connector.on(
@@ -228,21 +233,29 @@ class WalletConnectKeyring extends EventEmitter {
       ) => {
         const data = this.getConnectorInfoByPeerId(connector.peerId);
         if (!data) return;
-        const { connectorKey, address: _address } = data;
+        const { connectorKey, address: _address, brandName: _brandName } = data;
         const _chainId = this.connectors[connectorKey].chainId;
         const updateAddress = payload.params[0].accounts[0];
         const updateChain = payload.params[0].chainId;
 
         if (updateAddress.toLowerCase() !== _address.toLowerCase()) {
           this.connectors[connectorKey].sessionStatus = 'ACCOUNT_ERROR';
-          if (this.currentPeerId === connector.peerId) {
-            this.updateSessionStatus('ACCOUNT_ERROR');
-          }
+          this.updateSessionStatus('ACCOUNT_ERROR', {
+            address: _address,
+            brandName: _brandName
+          });
         } else if (updateChain !== _chainId) {
           this.connectors[connectorKey].sessionStatus = 'CHAIN_ERROR';
-          if (this.currentPeerId === connector.peerId) {
-            this.updateSessionStatus('CHAIN_ERROR');
-          }
+          this.updateSessionStatus('CHAIN_ERROR', {
+            address: _address,
+            brandName: _brandName
+          });
+        } else {
+          this.connectors[connectorKey].sessionStatus = 'CONNECTED';
+          this.updateSessionStatus('CONNECTED', {
+            address: _address,
+            brandName: _brandName
+          });
         }
       }
     );
@@ -255,27 +268,30 @@ class WalletConnectKeyring extends EventEmitter {
       const data = this.getConnectorInfoByPeerId(connector.peerId);
       if (!data) return;
       this.connectors[data.connectorKey].sessionStatus = 'CONNECTED';
-      if (this.currentPeerId === connector.peerId) {
-        this.updateSessionStatus('CONNECTED');
-      }
+      this.updateSessionStatus('CONNECTED', {
+        address: data.address,
+        brandName: data.brandName
+      });
     });
 
     connector.on('session_suspended', (error, payload) => {
       const data = this.getConnectorInfoByPeerId(connector.peerId);
       if (!data) return;
       this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
-      if (this.currentPeerId === connector.peerId) {
-        this.updateSessionStatus('DISCONNECTED');
-      }
+      this.updateSessionStatus('DISCONNECTED', {
+        address: data.address,
+        brandName: data.brandName
+      });
     });
 
     connector.on('disconnect', (error, payload) => {
       const data = this.getConnectorInfoByPeerId(connector.peerId);
       if (!data) return;
       this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
-      if (this.currentPeerId === connector.peerId) {
-        this.updateSessionStatus('DISCONNECTED');
-      }
+      this.updateSessionStatus('DISCONNECTED', {
+        address: data.address,
+        brandName: data.brandName
+      });
 
       this.onDisconnect && this.onDisconnect(error, payload);
     });
@@ -704,9 +720,16 @@ class WalletConnectKeyring extends EventEmitter {
     });
   }
 
-  updateSessionStatus(status: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP) {
+  updateSessionStatus(
+    status: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP,
+    opt?: {
+      address: string;
+      brandName: string;
+    }
+  ) {
     this.emit('sessionStatusChange', {
-      status
+      status,
+      ...opt
     });
   }
 
@@ -719,7 +742,12 @@ class WalletConnectKeyring extends EventEmitter {
     // just check if brandName is in name or name is in brandName
     const lowerName = name.toLowerCase();
     const lowerBrandName = brandName.toLowerCase();
+    const WhiteList = {
+      TP: ' TokenPocket',
+      MetaMask: 'MetaMask'
+    };
     if (
+      WhiteList[brandName] === name ||
       lowerName.includes(lowerBrandName) ||
       lowerBrandName.includes(lowerName)
     ) {
@@ -729,21 +757,11 @@ class WalletConnectKeyring extends EventEmitter {
     return false;
   }
 
-  setCurrentAccount(address: string, brandName: string) {
-    const connector = this.connectors[`${brandName}-${address!.toLowerCase()}`];
-
-    if (!connector) {
-      return this.updateSessionStatus('DISCONNECTED');
-    }
-
-    this.currentPeerId = connector.connector.peerId;
-  }
-
   getSessionStatus(address: string, brandName: string) {
     const connector = this.connectors[`${brandName}-${address!.toLowerCase()}`];
 
     if (!connector) {
-      return this.updateSessionStatus('DISCONNECTED');
+      return undefined;
     }
 
     return connector.sessionStatus;
