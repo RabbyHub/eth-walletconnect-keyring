@@ -31,7 +31,8 @@ export const WALLETCONNECT_SESSION_STATUS_MAP = {
   EXPIRED: 'EXPIRED',
   ACCOUNT_ERROR: 'ACCOUNT_ERROR',
   CHAIN_ERROR: 'CHAIN_ERROR',
-  BRAND_NAME_ERROR: 'BRAND_NAME_ERROR'
+  BRAND_NAME_ERROR: 'BRAND_NAME_ERROR',
+  REJECTED: 'REJECTED'
 };
 
 export const DEFAULT_BRIDGE = 'https://derelay.rabby.io';
@@ -304,6 +305,10 @@ class WalletConnectKeyring extends EventEmitter {
     });
 
     connector.on('disconnect', (error, payload) => {
+      if (payload.params[0]?.message === 'Session Rejected') {
+        this.updateSessionStatus('REJECTED');
+        return;
+      }
       const data = this.getConnectorInfoByPeerId(connector.peerId);
       if (!data) return;
       this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
