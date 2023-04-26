@@ -94,6 +94,7 @@ class WalletConnectKeyring extends EventEmitter {
   clientMeta: IClientMeta | null = null;
   currentConnector: Connector | null = null;
   connectors: Record<string, Connector> = {};
+  currentConnectParams: any = null;
 
   constructor(opts: ConstructorOptions) {
     super();
@@ -234,8 +235,11 @@ class WalletConnectKeyring extends EventEmitter {
         setTimeout(() => {
           this.closeConnector(connector, account.address, brandName);
         }, this.maxDuration);
+
+        this.currentConnector = conn;
       }
 
+      this.currentConnectParams = [error, payload];
       this.onAfterConnect?.(error, payload);
     });
 
@@ -808,6 +812,10 @@ class WalletConnectKeyring extends EventEmitter {
     }
 
     return account;
+  }
+
+  resend() {
+    this.onAfterConnect?.(...this.currentConnectParams);
   }
 }
 
