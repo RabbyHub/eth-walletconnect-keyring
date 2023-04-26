@@ -165,9 +165,9 @@ class WalletConnectKeyring extends EventEmitter {
     return connector;
   };
 
-  getConnectorInfoByPeerId(peerId: string) {
+  getConnectorInfoByClientId(clientId: string) {
     const connectorKey = Object.keys(this.connectors).find(
-      (key) => this.connectors[key].connector.peerId === peerId
+      (key) => this.connectors[key].connector.clientId === clientId
     );
     if (!connectorKey) {
       return;
@@ -251,7 +251,7 @@ class WalletConnectKeyring extends EventEmitter {
           }[];
         }
       ) => {
-        const data = this.getConnectorInfoByPeerId(connector.peerId);
+        const data = this.getConnectorInfoByClientId(connector.clientId);
         if (!data) return;
         const { connectorKey, address: _address, brandName: _brandName } = data;
         const _chainId = this.connectors[connectorKey].chainId;
@@ -285,7 +285,7 @@ class WalletConnectKeyring extends EventEmitter {
     });
 
     connector.on('session_resumed', (error, payload) => {
-      const data = this.getConnectorInfoByPeerId(connector.peerId);
+      const data = this.getConnectorInfoByClientId(connector.clientId);
       if (!data) return;
       this.connectors[data.connectorKey].sessionStatus = 'CONNECTED';
       this.updateSessionStatus('CONNECTED', {
@@ -295,8 +295,11 @@ class WalletConnectKeyring extends EventEmitter {
     });
 
     connector.on('session_suspended', (error, payload) => {
-      const data = this.getConnectorInfoByPeerId(connector.peerId);
-      if (!data) return;
+      const data = this.getConnectorInfoByClientId(connector.clientId);
+      if (!data) {
+        this.updateSessionStatus('REJECTED');
+        return;
+      }
       this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
       this.updateSessionStatus('DISCONNECTED', {
         address: data.address,
@@ -309,7 +312,7 @@ class WalletConnectKeyring extends EventEmitter {
         this.updateSessionStatus('REJECTED');
         return;
       }
-      const data = this.getConnectorInfoByPeerId(connector.peerId);
+      const data = this.getConnectorInfoByClientId(connector.clientId);
       if (!data) return;
       this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
       this.updateSessionStatus('DISCONNECTED', {
@@ -769,7 +772,7 @@ class WalletConnectKeyring extends EventEmitter {
     const lowerName = name.toLowerCase();
     const lowerBrandName = brandName.toLowerCase();
     const WhiteList = {
-      TP: ' TokenPocket',
+      TP: 'TokenPocket',
       MetaMask: 'MetaMask'
     };
     if (
