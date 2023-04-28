@@ -167,7 +167,16 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     });
                 }
             });
-            connector.on('session_received', (error, payload) => {
+            connector.on('ack', (error, payload) => {
+                const data = this.getConnectorInfoByClientId(connector.clientId);
+                if (data) {
+                    // todo
+                    const conn = this.connectors[data.connectorKey];
+                    if (conn.status === exports.WALLETCONNECT_STATUS_MAP.CONNECTED) {
+                        this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.WAITING, data.account);
+                    }
+                    return;
+                }
                 this.updateSessionStatus('RECEIVED');
             });
             connector.on('session_resumed', (error, payload) => {
@@ -351,9 +360,6 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 if (!this.currentConnector)
                     throw new Error('No connector avaliable');
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.CONNECTED, account, payload);
-                yield (0, utils_1.wait)(() => {
-                    this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.WAITING, account, payload);
-                }, 1000);
                 if (payload) {
                     const { accounts, chainId } = payload.params[0];
                     if (accounts[0].toLowerCase() !== address.toLowerCase() ||
@@ -422,9 +428,9 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 }
                 try {
                     this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.CONNECTED, payload);
-                    yield (0, utils_1.wait)(() => {
-                        this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.WAITING, payload);
-                    }, 1000);
+                    // await wait(() => {
+                    //   this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.WAITING, payload);
+                    // }, 1000);
                     const result = yield this.currentConnector.connector.signPersonalMessage([
                         message,
                         address
@@ -474,9 +480,13 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 }
                 try {
                     this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.CONNECTED, account, payload);
-                    yield (0, utils_1.wait)(() => {
-                        this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.WAITING, account, payload);
-                    }, 1000);
+                    // await wait(() => {
+                    //   this.updateCurrentStatus(
+                    //     WALLETCONNECT_STATUS_MAP.WAITING,
+                    //     account,
+                    //     payload
+                    //   );
+                    // }, 1000);
                     const result = yield this.currentConnector.connector.signTypedData([
                         address,
                         typeof data === 'string' ? data : JSON.stringify(data)
@@ -519,6 +529,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             a.brandName === brandName));
     }
     updateCurrentStatus(status, account, payload) {
+        var _a;
         if ((status === exports.WALLETCONNECT_STATUS_MAP.REJECTED ||
             status === exports.WALLETCONNECT_STATUS_MAP.FAILD) &&
             (this.currentConnectStatus === exports.WALLETCONNECT_STATUS_MAP.FAILD ||
@@ -527,6 +538,10 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             return;
         }
         this.currentConnectStatus = status;
+        const connector = this.connectors[`${account === null || account === void 0 ? void 0 : account.brandName}-${(_a = account === null || account === void 0 ? void 0 : account.address) === null || _a === void 0 ? void 0 : _a.toLowerCase()}`];
+        if (connector) {
+            connector.status = status;
+        }
         this.emit('statusChange', {
             status,
             account,
