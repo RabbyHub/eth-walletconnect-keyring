@@ -284,7 +284,20 @@ class WalletConnectKeyring extends EventEmitter {
       }
     );
 
-    connector.on('session_received', (error, payload) => {
+    connector.on('ack', (error, payload) => {
+      const data = this.getConnectorInfoByClientId(connector.clientId);
+      if (data) {
+        // todo
+        const conn = this.connectors[data.connectorKey];
+        if (conn.status === WALLETCONNECT_STATUS_MAP.CONNECTED) {
+          this.updateCurrentStatus(
+            WALLETCONNECT_STATUS_MAP.WAITING,
+            data.account
+          );
+        }
+        return;
+      }
+
       this.updateSessionStatus('RECEIVED');
     });
 
@@ -489,14 +502,6 @@ class WalletConnectKeyring extends EventEmitter {
         payload
       );
 
-      await wait(() => {
-        this.updateCurrentStatus(
-          WALLETCONNECT_STATUS_MAP.WAITING,
-          account,
-          payload
-        );
-      }, 1000);
-
       if (payload) {
         const { accounts, chainId } = payload.params[0];
         if (
@@ -587,9 +592,9 @@ class WalletConnectKeyring extends EventEmitter {
       }
       try {
         this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, payload);
-        await wait(() => {
-          this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.WAITING, payload);
-        }, 1000);
+        // await wait(() => {
+        //   this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.WAITING, payload);
+        // }, 1000);
         const result =
           await this.currentConnector.connector.signPersonalMessage([
             message,
@@ -668,13 +673,13 @@ class WalletConnectKeyring extends EventEmitter {
           payload
         );
 
-        await wait(() => {
-          this.updateCurrentStatus(
-            WALLETCONNECT_STATUS_MAP.WAITING,
-            account,
-            payload
-          );
-        }, 1000);
+        // await wait(() => {
+        //   this.updateCurrentStatus(
+        //     WALLETCONNECT_STATUS_MAP.WAITING,
+        //     account,
+        //     payload
+        //   );
+        // }, 1000);
 
         const result = await this.currentConnector.connector.signTypedData([
           address,
@@ -746,6 +751,15 @@ class WalletConnectKeyring extends EventEmitter {
       return;
     }
     this.currentConnectStatus = status;
+
+    const connector =
+      this.connectors[
+        `${account?.brandName}-${account?.address?.toLowerCase()}`
+      ];
+    if (connector) {
+      connector.status = status;
+    }
+
     this.emit('statusChange', {
       status,
       account,
