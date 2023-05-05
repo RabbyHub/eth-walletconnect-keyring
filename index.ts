@@ -159,6 +159,7 @@ class WalletConnectKeyring extends EventEmitter {
         null,
         error || payload.params[0]
       );
+      this.onAfterConnect = null;
     };
 
     return connector;
