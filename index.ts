@@ -30,7 +30,6 @@ export const WALLETCONNECT_SESSION_STATUS_MAP = {
   RECEIVED: 'RECEIVED',
   EXPIRED: 'EXPIRED',
   ACCOUNT_ERROR: 'ACCOUNT_ERROR',
-  CHAIN_ERROR: 'CHAIN_ERROR',
   BRAND_NAME_ERROR: 'BRAND_NAME_ERROR',
   REJECTED: 'REJECTED'
 };
@@ -137,7 +136,6 @@ class WalletConnectKeyring extends EventEmitter {
         {
           ...conn,
           status: WALLETCONNECT_STATUS_MAP.CONNECTED,
-          connector,
           chainId: payload.params[0].chainId,
           brandName,
           sessionStatus: 'CONNECTED'
@@ -195,7 +193,7 @@ class WalletConnectKeyring extends EventEmitter {
       localStorage.removeItem('walletconnect');
     }
     const connector = new WalletConnect({
-      bridge,
+      bridge: DEFAULT_BRIDGE,
       clientMeta: this.clientMeta!
     });
     connector.on('connect', (error, payload) => {
@@ -268,12 +266,6 @@ class WalletConnectKeyring extends EventEmitter {
             address: _address,
             brandName: _brandName
           });
-        } else if (updateChain !== _chainId) {
-          this.connectors[connectorKey].sessionStatus = 'CHAIN_ERROR';
-          this.updateSessionStatus('CHAIN_ERROR', {
-            address: _address,
-            brandName: _brandName
-          });
         } else {
           this.connectors[connectorKey].sessionStatus = 'CONNECTED';
           this.updateSessionStatus('CONNECTED', {
@@ -281,6 +273,13 @@ class WalletConnectKeyring extends EventEmitter {
             brandName: _brandName
           });
         }
+
+        this.emit('sessionAccountChange', {
+          address: _address,
+          brandName: _brandName,
+          chainId: updateChain
+        });
+        this.connectors[connectorKey].chainId = updateChain;
       }
     );
 
@@ -592,9 +591,7 @@ class WalletConnectKeyring extends EventEmitter {
       }
       try {
         this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, payload);
-        // await wait(() => {
-        //   this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.WAITING, payload);
-        // }, 1000);
+
         const result =
           await this.currentConnector.connector.signPersonalMessage([
             message,
@@ -672,14 +669,6 @@ class WalletConnectKeyring extends EventEmitter {
           account,
           payload
         );
-
-        // await wait(() => {
-        //   this.updateCurrentStatus(
-        //     WALLETCONNECT_STATUS_MAP.WAITING,
-        //     account,
-        //     payload
-        //   );
-        // }, 1000);
 
         const result = await this.currentConnector.connector.signTypedData([
           address,
@@ -812,6 +801,20 @@ class WalletConnectKeyring extends EventEmitter {
     }
 
     return connector.sessionStatus;
+  }
+
+  getSessionAccount(address: string, brandName: string) {
+    const connector = this.connectors[`${brandName}-${address!.toLowerCase()}`];
+
+    if (!connector) {
+      return undefined;
+    }
+
+    return {
+      address,
+      brandName: connector.brandName,
+      chainId: connector.chainId
+    };
   }
 
   getCommonWalletConnectInfo(address: string) {
