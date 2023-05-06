@@ -21,6 +21,7 @@ const wc_client_1 = __importDefault(require("@debank/wc-client"));
 const utils_1 = require("./utils");
 exports.keyringType = 'WalletConnect';
 const COMMON_WALLETCONNECT = 'WALLETCONNECT';
+const IGNORE_CHECK_WALLET = ['FIREBLOCKS', 'JADE', 'AMBER', 'COBO'];
 exports.WALLETCONNECT_STATUS_MAP = {
     PENDING: 1,
     CONNECTED: 2,
@@ -114,6 +115,9 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                             sessionStatus: 'CONNECTED',
                             peerMeta: (_c = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _c === void 0 ? void 0 : _c.peerMeta
                         });
+                    setTimeout(() => {
+                        this.closeConnector(connector, account.address, brandName);
+                    }, this.maxDuration);
                     // check brandName
                     if (brandName !== COMMON_WALLETCONNECT &&
                         !this._checkBrandName(brandName, payload)) {
@@ -129,9 +133,6 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                         address: account,
                         brandName
                     });
-                    setTimeout(() => {
-                        this.closeConnector(connector, account.address, brandName);
-                    }, this.maxDuration);
                     this.currentConnector = conn;
                 }
                 this.currentConnectParams = [error, payload];
@@ -221,6 +222,17 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 // address is not necessary to close connection
                 this.closeConnector(connector, '0x', brandName);
             });
+            connector.on('transport_pong', (error, { params: [{ delay }] }) => {
+                const data = this.getConnectorInfoByClientId(connector.clientId);
+                if (!data)
+                    return;
+                this.connectors[data.connectorKey].networkDelay = delay;
+                this.emit('sessionNetworkDelay', {
+                    address: data.address,
+                    brandName: data.brandName,
+                    delay
+                });
+            });
             yield connector.createSession();
             return connector;
         });
@@ -239,7 +251,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             }
         });
         this.init = (address, brandName) => __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
+            var _a, _b, _c;
             if ((0, utils_1.isBrowser)() && localStorage.getItem('walletconnect')) {
                 // always clear walletconnect cache
                 localStorage.removeItem('walletconnect');
@@ -257,12 +269,12 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             }
             // make sure the connector is the latest one before trigger onAfterConnect
             this.currentConnector = connector;
-            if (connector.connector.connected) {
+            if ((_b = connector === null || connector === void 0 ? void 0 : connector.connector) === null || _b === void 0 ? void 0 : _b.connected) {
                 const account = this.accounts.find((acc) => acc.address.toLowerCase() === address.toLowerCase() &&
                     acc.brandName === brandName);
                 connector.status = exports.WALLETCONNECT_STATUS_MAP.CONNECTED;
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.CONNECTED, account);
-                (_b = this.onAfterConnect) === null || _b === void 0 ? void 0 : _b.call(this, null, {
+                (_c = this.onAfterConnect) === null || _c === void 0 ? void 0 : _c.call(this, null, {
                     params: [{ accounts: [account.address], chainId: connector.chainId }]
                 });
             }
@@ -319,6 +331,13 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 brandName: connector.brandName,
                 chainId: connector.chainId
             };
+        };
+        this.getSessionNetworkDelay = (address, brandName) => {
+            const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
+            if (connector) {
+                return connector.networkDelay;
+            }
+            return null;
         };
         this.getCommonWalletConnectInfo = (address) => {
             const account = this.accounts.find((acct) => acct.address.toLowerCase() === address.toLowerCase() &&
@@ -584,6 +603,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             TP: 'TokenPocket',
             MetaMask: 'MetaMask'
         };
+        if (IGNORE_CHECK_WALLET.includes(brandName))
+            return true;
         if (WhiteList[brandName] === name ||
             lowerName.includes(lowerBrandName) ||
             lowerBrandName.includes(lowerName)) {

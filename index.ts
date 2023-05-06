@@ -14,6 +14,7 @@ import { isBrowser, wait } from './utils';
 
 export const keyringType = 'WalletConnect';
 const COMMON_WALLETCONNECT = 'WALLETCONNECT';
+const IGNORE_CHECK_WALLET = ['FIREBLOCKS', 'JADE', 'AMBER', 'COBO'];
 
 export const WALLETCONNECT_STATUS_MAP = {
   PENDING: 1,
@@ -73,6 +74,7 @@ type ConnectPayload = {
 interface Connector {
   connector: WalletConnect;
   status: ValueOf<typeof WALLETCONNECT_STATUS_MAP>;
+  networkDelay: number;
   brandName: string;
   chainId?: number;
   sessionStatus?: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP;
@@ -212,6 +214,10 @@ class WalletConnectKeyring extends EventEmitter {
             peerMeta: payload?.params[0]?.peerMeta
           } as Connector);
 
+        setTimeout(() => {
+          this.closeConnector(connector, account.address, brandName);
+        }, this.maxDuration);
+
         // check brandName
         if (
           brandName !== COMMON_WALLETCONNECT &&
@@ -230,10 +236,6 @@ class WalletConnectKeyring extends EventEmitter {
           address: account,
           brandName
         });
-
-        setTimeout(() => {
-          this.closeConnector(connector, account.address, brandName);
-        }, this.maxDuration);
 
         this.currentConnector = conn;
       }
@@ -346,6 +348,17 @@ class WalletConnectKeyring extends EventEmitter {
       this.closeConnector(connector, '0x', brandName);
     });
 
+    connector.on('transport_pong', (error, { params: [{ delay }] }) => {
+      const data = this.getConnectorInfoByClientId(connector.clientId);
+      if (!data) return;
+      this.connectors[data.connectorKey].networkDelay = delay;
+      this.emit('sessionNetworkDelay', {
+        address: data.address,
+        brandName: data.brandName,
+        delay
+      });
+    });
+
     await connector.createSession();
 
     return connector;
@@ -397,7 +410,7 @@ class WalletConnectKeyring extends EventEmitter {
     // make sure the connector is the latest one before trigger onAfterConnect
     this.currentConnector = connector;
 
-    if (connector.connector.connected) {
+    if (connector?.connector?.connected) {
       const account = this.accounts.find(
         (acc) =>
           acc.address.toLowerCase() === address.toLowerCase() &&
@@ -783,6 +796,8 @@ class WalletConnectKeyring extends EventEmitter {
       TP: 'TokenPocket',
       MetaMask: 'MetaMask'
     };
+    if (IGNORE_CHECK_WALLET.includes(brandName)) return true;
+
     if (
       WhiteList[brandName] === name ||
       lowerName.includes(lowerBrandName) ||
@@ -816,6 +831,14 @@ class WalletConnectKeyring extends EventEmitter {
       brandName: connector.brandName,
       chainId: connector.chainId
     };
+  };
+
+  getSessionNetworkDelay = (address: string, brandName: string) => {
+    const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
+    if (connector) {
+      return connector.networkDelay;
+    }
+    return null;
   };
 
   getCommonWalletConnectInfo = (address: string) => {
