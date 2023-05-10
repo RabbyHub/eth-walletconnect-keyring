@@ -148,9 +148,9 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                         chainId: conn.chainId
                     });
                     this.currentConnector = conn;
+                    this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.CONNECTED, null, Object.assign(Object.assign({}, payload.params[0]), { account }));
                 }
                 this.currentConnectParams = [error, payload];
-                // this.onAfterConnect?.(error, payload);
             });
             connector.on('session_update', (error, payload) => {
                 const data = this.getConnectorInfoByClientId(connector.clientId);

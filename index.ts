@@ -282,10 +282,14 @@ class WalletConnectKeyring extends EventEmitter {
         });
 
         this.currentConnector = conn;
+
+        this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, null, {
+          ...payload.params[0],
+          account
+        });
       }
 
       this.currentConnectParams = [error, payload];
-      // this.onAfterConnect?.(error, payload);
     });
 
     connector.on(
