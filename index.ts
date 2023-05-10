@@ -173,7 +173,6 @@ class WalletConnectKeyring extends EventEmitter {
         null,
         error || payload.params[0]
       );
-      this.onAfterConnect = null;
     };
 
     return connector;
@@ -286,7 +285,7 @@ class WalletConnectKeyring extends EventEmitter {
       }
 
       this.currentConnectParams = [error, payload];
-      this.onAfterConnect?.(error, payload);
+      // this.onAfterConnect?.(error, payload);
     });
 
     connector.on(
@@ -613,7 +612,6 @@ class WalletConnectKeyring extends EventEmitter {
         error || payload.params[0]
       );
       this.closeConnector(this.currentConnector.connector, address, brandName);
-      this.onAfterConnect = null;
     };
 
     await this.init(account.address, account.brandName);
@@ -686,7 +684,6 @@ class WalletConnectKeyring extends EventEmitter {
         error || payload.params[0]
       );
       this.closeConnector(this.currentConnector.connector, address, brandName);
-      this.onAfterConnect = null;
     };
 
     await this.init(account.address, account.brandName);
@@ -764,7 +761,6 @@ class WalletConnectKeyring extends EventEmitter {
         error || payload.params[0]
       );
       this.closeConnector(this.currentConnector.connector, address, brandName);
-      this.onAfterConnect = null;
     };
 
     await this.init(account.address, account.brandName);

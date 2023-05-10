@@ -96,7 +96,6 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     }
                 }
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, null, error || payload.params[0]);
-                this.onAfterConnect = null;
             };
             return connector;
         });
@@ -110,7 +109,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 clientMeta: this.clientMeta
             });
             connector.on('connect', (error, payload) => {
-                var _a, _b, _c, _d;
+                var _a, _b, _c;
                 if ((_a = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _a === void 0 ? void 0 : _a.accounts) {
                     const [account] = payload.params[0].accounts;
                     const buildInBrand = this.getBuildInBrandName(brandName, payload.params[0].peerMeta.name);
@@ -151,7 +150,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     this.currentConnector = conn;
                 }
                 this.currentConnectParams = [error, payload];
-                (_d = this.onAfterConnect) === null || _d === void 0 ? void 0 : _d.call(this, error, payload);
+                // this.onAfterConnect?.(error, payload);
             });
             connector.on('session_update', (error, payload) => {
                 const data = this.getConnectorInfoByClientId(connector.clientId);
@@ -489,7 +488,6 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     throw new Error('No connector avaliable');
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, error || payload.params[0]);
                 this.closeConnector(this.currentConnector.connector, address, brandName);
-                this.onAfterConnect = null;
             };
             yield this.init(account.address, account.brandName);
             return new Promise((resolve, reject) => {
@@ -540,7 +538,6 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     throw new Error('No connector avaliable');
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, error || payload.params[0]);
                 this.closeConnector(this.currentConnector.connector, address, brandName);
-                this.onAfterConnect = null;
             };
             yield this.init(account.address, account.brandName);
             return new Promise((resolve) => {
@@ -590,7 +587,6 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     throw new Error('No connector avaliable');
                 this.updateCurrentStatus(exports.WALLETCONNECT_STATUS_MAP.FAILD, account, error || payload.params[0]);
                 this.closeConnector(this.currentConnector.connector, address, brandName);
-                this.onAfterConnect = null;
             };
             yield this.init(account.address, account.brandName);
             return new Promise((resolve) => {
