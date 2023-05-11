@@ -131,8 +131,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                         !this._checkBrandName(buildInBrand, payload)) {
                         conn.sessionStatus = 'BRAND_NAME_ERROR';
                         this.updateSessionStatus('BRAND_NAME_ERROR', {
-                            address: account,
-                            brandName: buildInBrand
+                            address: (curAccount === null || curAccount === void 0 ? void 0 : curAccount.address) || account,
+                            brandName: (curAccount === null || curAccount === void 0 ? void 0 : curAccount.brandName) || buildInBrand
                         });
                         this._close(account, buildInBrand, true);
                         return;
