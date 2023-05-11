@@ -89,6 +89,7 @@ interface Connector {
   brandName: string;
   chainId?: number;
   sessionStatus?: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP;
+  preSessionStatus?: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP;
   peerMeta: IClientMeta;
   silent?: boolean;
 }
@@ -138,7 +139,7 @@ class WalletConnectKeyring extends EventEmitter {
 
   initConnector = async (brandName: string, bridge?: string) => {
     let address: string | null = null;
-    const connector = await this.createConnector(brandName, bridge);
+    const connector = await this.createConnector(brandName);
 
     this.onAfterConnect = (error, payload: ConnectPayload) => {
       const [account] = payload.params[0].accounts;
@@ -223,7 +224,7 @@ class WalletConnectKeyring extends EventEmitter {
     return buildIn || brandName;
   }
 
-  createConnector = async (brandName: string, bridge = DEFAULT_BRIDGE) => {
+  createConnector = async (brandName: string, curAccount?: Account) => {
     if (isBrowser() && localStorage.getItem('walletconnect')) {
       // always clear walletconnect cache
       localStorage.removeItem('walletconnect');
@@ -253,7 +254,7 @@ class WalletConnectKeyring extends EventEmitter {
         } as Connector);
 
         setTimeout(() => {
-          this.closeConnector(connector, account.address, buildInBrand);
+          this.closeConnector(connector, account, buildInBrand);
         }, this.maxDuration);
 
         // check brandName
@@ -268,6 +269,18 @@ class WalletConnectKeyring extends EventEmitter {
           });
           this._close(account, buildInBrand, true);
           return;
+        }
+
+        if (curAccount) {
+          if (
+            account.toLowerCase() !== curAccount?.address.toLowerCase() ||
+            buildInBrand !== curAccount?.brandName
+          ) {
+            conn.sessionStatus = 'ACCOUNT_ERROR';
+            this.updateSessionStatus('ACCOUNT_ERROR', curAccount);
+            this._close(account, buildInBrand, true);
+            return;
+          }
         }
 
         this.updateSessionStatus('CONNECTED', {
@@ -354,8 +367,9 @@ class WalletConnectKeyring extends EventEmitter {
     connector.on('session_resumed', (error, payload) => {
       const data = this.getConnectorInfoByClientId(connector.clientId);
       if (!data) return;
-      this.connectors[data.connectorKey].sessionStatus = 'CONNECTED';
-      this.updateSessionStatus('CONNECTED', {
+      const conn = this.connectors[data.connectorKey];
+      conn.sessionStatus = conn.preSessionStatus ?? 'CONNECTED';
+      this.updateSessionStatus(conn.sessionStatus, {
         address: data.address,
         brandName: data.brandName
       });
@@ -367,7 +381,11 @@ class WalletConnectKeyring extends EventEmitter {
         this.updateSessionStatus('REJECTED');
         return;
       }
-      this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
+      const conn = this.connectors[data.connectorKey];
+      if (conn.sessionStatus !== 'DISCONNECTED') {
+        conn.preSessionStatus = conn.sessionStatus;
+      }
+      conn.sessionStatus = 'DISCONNECTED';
       this.updateSessionStatus('DISCONNECTED', {
         address: data.address,
         brandName: data.brandName
@@ -454,7 +472,7 @@ class WalletConnectKeyring extends EventEmitter {
       const lowerAddress = account?.address.toLowerCase();
       connector = this.connectors[`${brandName}-${lowerAddress}`];
       if (!connector?.connector?.connected) {
-        const newConnector = await this.createConnector(brandName);
+        const newConnector = await this.createConnector(brandName, account);
         connector = {
           ...this.connectors[`${brandName}-${lowerAddress}`],
           connector: newConnector,
