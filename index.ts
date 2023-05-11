@@ -393,7 +393,7 @@ class WalletConnectKeyring extends EventEmitter {
     });
 
     connector.on('disconnect', (error, payload) => {
-      if (payload.params[0]?.message === 'Session Rejected') {
+      if (payload.params[0]?.message.toLowerCase().includes('rejected')) {
         this.updateSessionStatus('REJECTED');
         return;
       }
@@ -499,7 +499,9 @@ class WalletConnectKeyring extends EventEmitter {
       connector.status = WALLETCONNECT_STATUS_MAP.PENDING;
     }
 
-    this.emit('inited', connector.connector.uri);
+    if (connector?.connector?.uri) {
+      this.emit('inited', connector.connector.uri);
+    }
 
     return connector;
   };
