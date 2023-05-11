@@ -232,7 +232,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             });
             connector.on('disconnect', (error, payload) => {
                 var _a;
-                if (((_a = payload.params[0]) === null || _a === void 0 ? void 0 : _a.message) === 'Session Rejected') {
+                if ((_a = payload.params[0]) === null || _a === void 0 ? void 0 : _a.message.toLowerCase().includes('rejected')) {
                     this.updateSessionStatus('REJECTED');
                     return;
                 }
@@ -288,7 +288,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             }
         });
         this.init = (address, brandName) => __awaiter(this, void 0, void 0, function* () {
-            var _a, _b, _c;
+            var _a, _b, _c, _d;
             if ((0, utils_1.isBrowser)() && localStorage.getItem('walletconnect')) {
                 // always clear walletconnect cache
                 localStorage.removeItem('walletconnect');
@@ -318,7 +318,9 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             else if (connector) {
                 connector.status = exports.WALLETCONNECT_STATUS_MAP.PENDING;
             }
-            this.emit('inited', connector.connector.uri);
+            if ((_d = connector === null || connector === void 0 ? void 0 : connector.connector) === null || _d === void 0 ? void 0 : _d.uri) {
+                this.emit('inited', connector.connector.uri);
+            }
             return connector;
         });
         this.getConnectorStatus = (address, brandName) => {
@@ -329,7 +331,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             return null;
         };
         this.addAccounts = () => __awaiter(this, void 0, void 0, function* () {
-            var _d;
+            var _e;
             if (!this.accountToAdd)
                 throw new Error('There is no address to add');
             if (!(0, web3_utils_1.isAddress)(this.accountToAdd.address)) {
@@ -341,7 +343,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 return acct.address.toLowerCase() === prefixedAddress.toLowerCase() &&
                     acct.brandName === ((_a = this.accountToAdd) === null || _a === void 0 ? void 0 : _a.brandName);
             })) {
-                this._close(prefixedAddress, (_d = this.accountToAdd) === null || _d === void 0 ? void 0 : _d.brandName, true);
+                this._close(prefixedAddress, (_e = this.accountToAdd) === null || _e === void 0 ? void 0 : _e.brandName, true);
                 this.updateSessionStatus('ADDRESS_DUPLICATE');
                 throw new Error("The address you're are trying to import is duplicate");
             }
