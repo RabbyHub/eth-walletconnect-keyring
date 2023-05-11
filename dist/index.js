@@ -78,7 +78,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
         };
         this.initConnector = (brandName, bridge) => __awaiter(this, void 0, void 0, function* () {
             let address = null;
-            const connector = yield this.createConnector(brandName, bridge);
+            const connector = yield this.createConnector(brandName);
             this.onAfterConnect = (error, payload) => {
                 const [account] = payload.params[0].accounts;
                 address = account;
@@ -99,7 +99,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             };
             return connector;
         });
-        this.createConnector = (brandName, bridge = exports.DEFAULT_BRIDGE) => __awaiter(this, void 0, void 0, function* () {
+        this.createConnector = (brandName, curAccount) => __awaiter(this, void 0, void 0, function* () {
             if ((0, utils_1.isBrowser)() && localStorage.getItem('walletconnect')) {
                 // always clear walletconnect cache
                 localStorage.removeItem('walletconnect');
@@ -124,7 +124,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                         peerMeta: (_c = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _c === void 0 ? void 0 : _c.peerMeta
                     });
                     setTimeout(() => {
-                        this.closeConnector(connector, account.address, buildInBrand);
+                        this.closeConnector(connector, account, buildInBrand);
                     }, this.maxDuration);
                     // check brandName
                     if (buildInBrand !== COMMON_WALLETCONNECT &&
@@ -136,6 +136,15 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                         });
                         this._close(account, buildInBrand, true);
                         return;
+                    }
+                    if (curAccount) {
+                        if (account.toLowerCase() !== (curAccount === null || curAccount === void 0 ? void 0 : curAccount.address.toLowerCase()) ||
+                            buildInBrand !== (curAccount === null || curAccount === void 0 ? void 0 : curAccount.brandName)) {
+                            conn.sessionStatus = 'ACCOUNT_ERROR';
+                            this.updateSessionStatus('ACCOUNT_ERROR', curAccount);
+                            this._close(account, buildInBrand, true);
+                            return;
+                        }
                     }
                     this.updateSessionStatus('CONNECTED', {
                         address: account,
@@ -194,11 +203,13 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 this.updateSessionStatus('RECEIVED');
             });
             connector.on('session_resumed', (error, payload) => {
+                var _a;
                 const data = this.getConnectorInfoByClientId(connector.clientId);
                 if (!data)
                     return;
-                this.connectors[data.connectorKey].sessionStatus = 'CONNECTED';
-                this.updateSessionStatus('CONNECTED', {
+                const conn = this.connectors[data.connectorKey];
+                conn.sessionStatus = (_a = conn.preSessionStatus) !== null && _a !== void 0 ? _a : 'CONNECTED';
+                this.updateSessionStatus(conn.sessionStatus, {
                     address: data.address,
                     brandName: data.brandName
                 });
@@ -209,7 +220,11 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     this.updateSessionStatus('REJECTED');
                     return;
                 }
-                this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
+                const conn = this.connectors[data.connectorKey];
+                if (conn.sessionStatus !== 'DISCONNECTED') {
+                    conn.preSessionStatus = conn.sessionStatus;
+                }
+                conn.sessionStatus = 'DISCONNECTED';
                 this.updateSessionStatus('DISCONNECTED', {
                     address: data.address,
                     brandName: data.brandName
@@ -285,7 +300,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 const lowerAddress = account === null || account === void 0 ? void 0 : account.address.toLowerCase();
                 connector = this.connectors[`${brandName}-${lowerAddress}`];
                 if (!((_a = connector === null || connector === void 0 ? void 0 : connector.connector) === null || _a === void 0 ? void 0 : _a.connected)) {
-                    const newConnector = yield this.createConnector(brandName);
+                    const newConnector = yield this.createConnector(brandName, account);
                     connector = Object.assign(Object.assign({}, this.connectors[`${brandName}-${lowerAddress}`]), { connector: newConnector, status: exports.WALLETCONNECT_STATUS_MAP.PENDING });
                 }
             }
