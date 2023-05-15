@@ -109,19 +109,19 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 clientMeta: this.clientMeta
             });
             connector.on('connect', (error, payload) => {
-                var _a, _b, _c;
+                var _a, _b, _c, _d, _e;
                 if ((_a = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _a === void 0 ? void 0 : _a.accounts) {
                     const [account] = payload.params[0].accounts;
-                    const buildInBrand = this.getBuildInBrandName(brandName, payload.params[0].peerMeta.name);
+                    const buildInBrand = this.getBuildInBrandName(brandName, (_b = payload.params[0].peerMeta) === null || _b === void 0 ? void 0 : _b.name);
                     const conn = (this.connectors[`${buildInBrand}-${account.toLowerCase()}`] = {
                         connector,
                         status: connector.connected
                             ? exports.WALLETCONNECT_STATUS_MAP.CONNECTED
                             : exports.WALLETCONNECT_STATUS_MAP.PENDING,
-                        chainId: (_b = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _b === void 0 ? void 0 : _b.chainId,
+                        chainId: (_c = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _c === void 0 ? void 0 : _c.chainId,
                         brandName: buildInBrand,
                         sessionStatus: 'CONNECTED',
-                        peerMeta: (_c = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _c === void 0 ? void 0 : _c.peerMeta
+                        peerMeta: (_d = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _d === void 0 ? void 0 : _d.peerMeta
                     });
                     setTimeout(() => {
                         this.closeConnector(connector, account, buildInBrand);
@@ -149,7 +149,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     this.updateSessionStatus('CONNECTED', {
                         address: account,
                         brandName: buildInBrand,
-                        realBrandName: conn.peerMeta.name
+                        realBrandName: (_e = conn.peerMeta) === null || _e === void 0 ? void 0 : _e.name
                     });
                     this.emit('sessionAccountChange', {
                         address: account,
@@ -663,14 +663,16 @@ class WalletConnectKeyring extends events_1.EventEmitter {
         return sanitizeHex(str);
     }
     _checkBrandName(brandName, payload) {
-        var _a;
-        const name = payload.params[0].peerMeta.name;
+        var _a, _b;
+        const name = (_a = payload.params[0].peerMeta) === null || _a === void 0 ? void 0 : _a.name;
         // just check if brandName is in name or name is in brandName
-        const lowerName = name.toLowerCase();
-        const peerName = (_a = BuildInWalletPeerName[brandName]) === null || _a === void 0 ? void 0 : _a.toLowerCase();
+        const lowerName = name === null || name === void 0 ? void 0 : name.toLowerCase();
+        if (!lowerName)
+            return false;
+        const peerName = (_b = BuildInWalletPeerName[brandName]) === null || _b === void 0 ? void 0 : _b.toLowerCase();
         if (IGNORE_CHECK_WALLET.includes(brandName))
             return true;
-        if (peerName.includes(lowerName) || lowerName.includes(peerName)) {
+        if ((peerName === null || peerName === void 0 ? void 0 : peerName.includes(lowerName)) || (lowerName === null || lowerName === void 0 ? void 0 : lowerName.includes(peerName !== null && peerName !== void 0 ? peerName : ''))) {
             return true;
         }
         return false;
