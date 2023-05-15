@@ -238,7 +238,7 @@ class WalletConnectKeyring extends EventEmitter {
         const [account] = payload.params[0].accounts;
         const buildInBrand = this.getBuildInBrandName(
           brandName,
-          payload.params[0].peerMeta.name
+          payload.params[0].peerMeta?.name
         );
         const conn = (this.connectors[
           `${buildInBrand}-${account.toLowerCase()}`
@@ -286,7 +286,7 @@ class WalletConnectKeyring extends EventEmitter {
         this.updateSessionStatus('CONNECTED', {
           address: account,
           brandName: buildInBrand,
-          realBrandName: conn.peerMeta.name
+          realBrandName: conn.peerMeta?.name
         });
         this.emit('sessionAccountChange', {
           address: account,
@@ -875,13 +875,16 @@ class WalletConnectKeyring extends EventEmitter {
   }
 
   _checkBrandName(brandName, payload) {
-    const name = payload.params[0].peerMeta.name;
+    const name = payload.params[0].peerMeta?.name;
     // just check if brandName is in name or name is in brandName
-    const lowerName = name.toLowerCase();
-    const peerName = BuildInWalletPeerName[brandName]?.toLowerCase();
+    const lowerName = name?.toLowerCase() as string | undefined;
+    if (!lowerName) return false;
+    const peerName = BuildInWalletPeerName[brandName]?.toLowerCase() as
+      | string
+      | undefined;
     if (IGNORE_CHECK_WALLET.includes(brandName)) return true;
 
-    if (peerName.includes(lowerName) || lowerName.includes(peerName)) {
+    if (peerName?.includes(lowerName) || lowerName?.includes(peerName ?? '')) {
       return true;
     }
 
