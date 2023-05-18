@@ -20,7 +20,7 @@ const ethereumjs_util_1 = require("ethereumjs-util");
 const wc_client_1 = __importDefault(require("@debank/wc-client"));
 const utils_1 = require("./utils");
 exports.keyringType = 'WalletConnect';
-const COMMON_WALLETCONNECT = 'WALLETCONNECT';
+const COMMON_WALLETCONNECT = ['WALLETCONNECT', 'WalletConnect'];
 const IGNORE_CHECK_WALLET = ['FIREBLOCKS', 'JADE', 'AMBER', 'COBO'];
 exports.WALLETCONNECT_STATUS_MAP = {
     PENDING: 1,
@@ -131,7 +131,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                         this.closeConnector(connector, account, buildInBrand);
                     }, this.maxDuration);
                     // check brandName
-                    if (buildInBrand !== COMMON_WALLETCONNECT &&
+                    if (!COMMON_WALLETCONNECT.includes(buildInBrand) &&
                         !this._checkBrandName(buildInBrand, payload)) {
                         conn.sessionStatus = 'BRAND_NAME_ERROR';
                         this.updateSessionStatus('BRAND_NAME_ERROR', {
@@ -387,7 +387,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
         };
         this.getCommonWalletConnectInfo = (address) => {
             const account = this.accounts.find((acct) => acct.address.toLowerCase() === address.toLowerCase() &&
-                acct.brandName === COMMON_WALLETCONNECT);
+                COMMON_WALLETCONNECT.includes(acct.brandName));
             if (!account) {
                 return undefined;
             }
@@ -430,7 +430,7 @@ class WalletConnectKeyring extends events_1.EventEmitter {
         };
     }
     getBuildInBrandName(brandName, realBrandName) {
-        if (brandName !== COMMON_WALLETCONNECT) {
+        if (!COMMON_WALLETCONNECT.includes(brandName)) {
             return brandName;
         }
         const lowerName = realBrandName === null || realBrandName === void 0 ? void 0 : realBrandName.toLowerCase();
