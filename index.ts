@@ -13,7 +13,7 @@ import {
 import { isBrowser, wait } from './utils';
 
 export const keyringType = 'WalletConnect';
-const COMMON_WALLETCONNECT = 'WALLETCONNECT';
+const COMMON_WALLETCONNECT = ['WALLETCONNECT', 'WalletConnect'];
 const IGNORE_CHECK_WALLET = ['FIREBLOCKS', 'JADE', 'AMBER', 'COBO'];
 
 export const WALLETCONNECT_STATUS_MAP = {
@@ -207,7 +207,7 @@ class WalletConnectKeyring extends EventEmitter {
   }
 
   getBuildInBrandName(brandName: string, realBrandName?: string) {
-    if (brandName !== COMMON_WALLETCONNECT) {
+    if (!COMMON_WALLETCONNECT.includes(brandName)) {
       return brandName;
     }
 
@@ -263,7 +263,7 @@ class WalletConnectKeyring extends EventEmitter {
 
         // check brandName
         if (
-          buildInBrand !== COMMON_WALLETCONNECT &&
+          !COMMON_WALLETCONNECT.includes(buildInBrand) &&
           !this._checkBrandName(buildInBrand, payload)
         ) {
           conn.sessionStatus = 'BRAND_NAME_ERROR';
@@ -931,7 +931,7 @@ class WalletConnectKeyring extends EventEmitter {
     const account = this.accounts.find(
       (acct) =>
         acct.address.toLowerCase() === address.toLowerCase() &&
-        acct.brandName === COMMON_WALLETCONNECT
+        COMMON_WALLETCONNECT.includes(acct.brandName)
     );
 
     if (!account) {
