@@ -41,7 +41,11 @@ const BuildInWalletPeerName = {
   TP: 'TokenPocket',
   TRUSTWALLET: 'Trust Wallet',
   MATHWALLET: 'MathWallet',
-  IMTOKEN: 'imToken'
+  IMTOKEN: 'imToken',
+  Rainbow: 'Rainbow',
+  Bitkeep: 'Bitkeep',
+  Uniswap: 'Uniswap',
+  Zerion: 'Zerion'
 };
 
 const buildInWallets = Object.keys(BuildInWalletPeerName);
