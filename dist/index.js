@@ -116,7 +116,9 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                 var _a, _b, _c, _d, _e;
                 if ((_a = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _a === void 0 ? void 0 : _a.accounts) {
                     const [account] = payload.params[0].accounts;
-                    const buildInBrand = this.getBuildInBrandName(brandName, (_b = payload.params[0].peerMeta) === null || _b === void 0 ? void 0 : _b.name);
+                    const buildInBrand = this.getBuildInBrandName(brandName, (_b = payload.params[0].peerMeta) === null || _b === void 0 ? void 0 : _b.name, 
+                    // if is old account and is desktop, should ignore check
+                    !!curAccount);
                     const conn = (this.connectors[`${buildInBrand}-${account.toLowerCase()}`] = {
                         connector,
                         status: connector.connected
@@ -429,10 +431,11 @@ class WalletConnectKeyring extends events_1.EventEmitter {
             account
         };
     }
-    getBuildInBrandName(brandName, realBrandName) {
-        // is desktop
-        if (brandName === 'WalletConnect') {
-            return brandName;
+    getBuildInBrandName(brandName, realBrandName, patchCheckWalletConnect) {
+        if (patchCheckWalletConnect) {
+            // is desktop
+            if (brandName === 'WalletConnect')
+                return brandName;
         }
         if (!COMMON_WALLETCONNECT.includes(brandName)) {
             return brandName;
