@@ -207,6 +207,11 @@ class WalletConnectKeyring extends EventEmitter {
   }
 
   getBuildInBrandName(brandName: string, realBrandName?: string) {
+    // is desktop
+    if (brandName === 'WalletConnect') {
+      return brandName;
+    }
+
     if (!COMMON_WALLETCONNECT.includes(brandName)) {
       return brandName;
     }
@@ -278,8 +283,7 @@ class WalletConnectKeyring extends EventEmitter {
         if (curAccount) {
           if (
             account.toLowerCase() !== curAccount?.address.toLowerCase() ||
-            (buildInBrand !== curAccount?.brandName &&
-              !COMMON_WALLETCONNECT.includes(buildInBrand))
+            buildInBrand !== curAccount?.brandName
           ) {
             conn.sessionStatus = 'ACCOUNT_ERROR';
             this.updateSessionStatus('ACCOUNT_ERROR', curAccount);
