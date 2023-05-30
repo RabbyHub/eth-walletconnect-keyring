@@ -278,8 +278,8 @@ class WalletConnectKeyring extends EventEmitter {
         if (curAccount) {
           if (
             account.toLowerCase() !== curAccount?.address.toLowerCase() ||
-            buildInBrand !== curAccount?.brandName ||
-            !COMMON_WALLETCONNECT.includes(buildInBrand)
+            (buildInBrand !== curAccount?.brandName &&
+              !COMMON_WALLETCONNECT.includes(buildInBrand))
           ) {
             conn.sessionStatus = 'ACCOUNT_ERROR';
             this.updateSessionStatus('ACCOUNT_ERROR', curAccount);
