@@ -143,8 +143,8 @@ class WalletConnectKeyring extends events_1.EventEmitter {
                     }
                     if (curAccount) {
                         if (account.toLowerCase() !== (curAccount === null || curAccount === void 0 ? void 0 : curAccount.address.toLowerCase()) ||
-                            buildInBrand !== (curAccount === null || curAccount === void 0 ? void 0 : curAccount.brandName) ||
-                            !COMMON_WALLETCONNECT.includes(buildInBrand)) {
+                            (buildInBrand !== (curAccount === null || curAccount === void 0 ? void 0 : curAccount.brandName) &&
+                                !COMMON_WALLETCONNECT.includes(buildInBrand))) {
                             conn.sessionStatus = 'ACCOUNT_ERROR';
                             this.updateSessionStatus('ACCOUNT_ERROR', curAccount);
                             this._close(account, buildInBrand, true);
