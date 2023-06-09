@@ -677,9 +677,12 @@ class WalletConnectKeyring extends events_1.EventEmitter {
         var _a, _b;
         const name = (_a = payload.params[0].peerMeta) === null || _a === void 0 ? void 0 : _a.name;
         // just check if brandName is in name or name is in brandName
-        const lowerName = name === null || name === void 0 ? void 0 : name.toLowerCase();
-        if (!lowerName)
-            return false;
+        let lowerName = name === null || name === void 0 ? void 0 : name.toLowerCase();
+        if (!lowerName) {
+            this.emit('error', new Error('[WalletConnect] No peerMeta name ' +
+                JSON.stringify(payload.params[0].peerMeta)));
+            lowerName = brandName;
+        }
         const peerName = (_b = BuildInWalletPeerName[brandName]) === null || _b === void 0 ? void 0 : _b.toLowerCase();
         if (IGNORE_CHECK_WALLET.includes(brandName))
             return true;
