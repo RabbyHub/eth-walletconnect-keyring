@@ -2,8 +2,8 @@
 import { EventEmitter } from 'events';
 import { isAddress } from 'web3-utils';
 import { AccountData, addHexPrefix, bufferToHex } from 'ethereumjs-util';
-import WalletConnect from '@debank/wc-client';
-import { IClientMeta } from '@debank/wc-types';
+import WalletConnect from '@rabby-wallet/wc-client';
+import { IClientMeta } from '@rabby-wallet/wc-types';
 import {
   TypedTransaction,
   JsonTx,
