@@ -17,7 +17,7 @@ exports.DEFAULT_BRIDGE = exports.WALLETCONNECT_SESSION_STATUS_MAP = exports.WALL
 const events_1 = require("events");
 const web3_utils_1 = require("web3-utils");
 const ethereumjs_util_1 = require("ethereumjs-util");
-const wc_client_1 = __importDefault(require("@debank/wc-client"));
+const wc_client_1 = __importDefault(require("@rabby-wallet/wc-client"));
 const utils_1 = require("./utils");
 exports.keyringType = 'WalletConnect';
 const COMMON_WALLETCONNECT = ['WALLETCONNECT', 'WalletConnect'];
