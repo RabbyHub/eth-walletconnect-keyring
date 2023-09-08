@@ -249,7 +249,7 @@ export class WalletConnectKeyring extends EventEmitter {
       this.closeConnector(payload);
     };
 
-    await this.init(account.address, account.brandName);
+    await this.init(account.address, account.brandName, txChainId);
 
     return new Promise((resolve, reject) => {
       this.resolvePromise = resolve;
