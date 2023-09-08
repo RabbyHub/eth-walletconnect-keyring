@@ -61,6 +61,14 @@ export class WalletConnectKeyring extends EventEmitter {
       metadata: this.options.clientMeta
     });
 
+    // clear inactive session
+    const activeSessions = this.client.session.keys;
+    this.cached.getAllTopics().forEach((topic) => {
+      if (!activeSessions.includes(topic)) {
+        this.closeConnector({ topic });
+      }
+    });
+
     this.client.on('session_delete', (session) => {
       console.log('session_delete', session);
       this.cached.deleteTopic(session.topic);

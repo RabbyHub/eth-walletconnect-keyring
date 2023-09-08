@@ -56,4 +56,8 @@ export class Cached {
       }
     }
   }
+
+  getAllTopics() {
+    return [...this.topics.keys()];
+  }
 }
