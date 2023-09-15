@@ -71,7 +71,7 @@ export class WalletConnectKeyring extends EventEmitter {
 
     this.client.on('session_delete', (session) => {
       console.log('session_delete', session);
-      this.cached.deleteTopic(session.topic);
+      this.closeConnector({ topic: session.topic });
     });
 
     this.client.on('session_update', console.log);
