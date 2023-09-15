@@ -365,17 +365,20 @@ class WalletConnectKeyring extends events_1.default {
                 return;
             }
             const { uri } = yield this.initConnector(brandName, chainId, account);
-            this.emit('inited', uri);
             return { uri };
         });
     }
     // initialize the connector
     initConnector(brandName, chainId, account) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.client) {
-                yield (0, utils_2.wait)(() => this.client, 500);
+            // wait 1min
+            let loopCount = 0;
+            while (!this.client && loopCount < 60) {
+                loopCount++;
+                yield (0, utils_2.wait)(() => this.client, 1000);
             }
             const uri = yield this.createSession(brandName, chainId, account);
+            this.emit('inited', uri);
             return { uri };
         });
     }
