@@ -410,18 +410,21 @@ export class WalletConnectKeyring extends EventEmitter {
     }
 
     const { uri } = await this.initConnector(brandName, chainId, account);
-    this.emit('inited', uri);
 
     return { uri };
   }
 
   // initialize the connector
   async initConnector(brandName: string, chainId?: number, account?: Account) {
-    if (!this.client) {
-      await wait(() => this.client, 500);
+    // wait 1min
+    let loopCount = 0;
+    while (!this.client && loopCount < 60) {
+      loopCount++;
+      await wait(() => this.client, 1000);
     }
 
     const uri = await this.createSession(brandName, chainId, account);
+    this.emit('inited', uri);
 
     return { uri };
   }
