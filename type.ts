@@ -44,7 +44,7 @@ export const BuildInWalletPeerName = {
   MATHWALLET: 'MathWallet',
   IMTOKEN: 'imToken',
   Rainbow: 'Rainbow',
-  Bitkeep: 'Bitkeep',
+  Bitkeep: 'Bitget',
   Uniswap: 'Uniswap',
   Zerion: 'Zerion'
 };
