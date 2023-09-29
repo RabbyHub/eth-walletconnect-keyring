@@ -33,6 +33,7 @@ export interface ConstructorOptions {
   clientMeta: CoreTypes.Metadata;
   maxDuration?: number;
   projectId: string;
+  v2Whitelist: string[];
 }
 
 export const COMMON_WALLETCONNECT = ['WALLETCONNECT', 'WalletConnect'];
