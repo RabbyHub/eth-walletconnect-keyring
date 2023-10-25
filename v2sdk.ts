@@ -26,6 +26,7 @@ import {
 } from '@ethereumjs/tx';
 import { wait } from './utils';
 import { SDK } from './sdk';
+import { toHex } from 'web3-utils';
 
 export class V2SDK extends SDK {
   accounts: Account[] = [];
@@ -37,6 +38,8 @@ export class V2SDK extends SDK {
   resolvePromise?: (value: any) => void;
   rejectPromise?: (value: any) => void;
   options!: ConstructorOptions;
+
+  version = 2;
 
   constructor(opts: ConstructorOptions) {
     super();
@@ -193,6 +196,23 @@ export class V2SDK extends SDK {
     return new Promise((resolve, reject) => {
       this.resolvePromise = resolve;
       this.rejectPromise = reject;
+    });
+  }
+
+  async switchEthereumChain(chainId: number) {
+    const payload = this.cached.getTopic(this.currentTopic!)!;
+
+    return this.client.request({
+      request: {
+        method: 'wallet_switchEthereumChain',
+        params: [
+          {
+            chainId: toHex(chainId)
+          }
+        ]
+      },
+      topic: this.currentTopic!,
+      chainId: [payload.namespace, payload.chainId].join(':')
     });
   }
 
@@ -458,7 +478,13 @@ export class V2SDK extends SDK {
     curAccount?: Account
   ) {
     const { uri, approval } = await this.client.connect({
-      requiredNamespaces: getRequiredNamespaces([`eip155:${chainId}`])
+      requiredNamespaces: getRequiredNamespaces([`eip155:${chainId}`]),
+      optionalNamespaces: {
+        [`eip155:${chainId}`]: {
+          methods: ['wallet_switchEthereumChain'],
+          events: []
+        }
+      }
     });
 
     approval().then((session) => {

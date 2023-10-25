@@ -62,6 +62,8 @@ export class V1SDK extends SDK {
   connectors: Record<string, Connector> = {};
   currentConnectParams: any = null;
 
+  version = 1;
+
   constructor(opts: ConstructorOptions) {
     super();
     this.accounts = opts.accounts || [];
@@ -824,5 +826,9 @@ export class V1SDK extends SDK {
 
   resend = () => {
     this.onAfterConnect?.(...this.currentConnectParams);
+  };
+
+  switchEthereumChain = () => {
+    throw new Error('Method not implemented.');
   };
 }

@@ -218,4 +218,10 @@ export class WalletConnectKeyring extends EventEmitter {
     this.v2SDK.on(event, listener);
     return this;
   }
+
+  switchEthereumChain = (brandName: string, chainId: number) => {
+    const sdk = this.getSDK(brandName);
+
+    if (sdk.version === 2) return sdk.switchEthereumChain(chainId);
+  };
 }

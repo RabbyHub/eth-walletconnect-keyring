@@ -18,4 +18,6 @@ export abstract class SDK extends EventEmitter {
       realBrandName?: string;
     }
   );
+
+  abstract switchEthereumChain(chainId: number): Promise<unknown>;
 }
