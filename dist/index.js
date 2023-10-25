@@ -73,6 +73,11 @@ class WalletConnectKeyring extends events_1.default {
             const sdk = this.getSDK(account.brandName);
             return sdk.resend();
         };
+        this.switchEthereumChain = (brandName, chainId) => {
+            const sdk = this.getSDK(brandName);
+            if (sdk.version === 2)
+                return sdk.switchEthereumChain(chainId);
+        };
         this.v2Whitelist = opts.v2Whitelist;
         this.v1SDK = new v1sdk_1.V1SDK(opts);
         this.v2SDK = new v2sdk_1.V2SDK(opts);

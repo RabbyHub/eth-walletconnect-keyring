@@ -20,11 +20,13 @@ const type_1 = require("./type");
 const utils_1 = require("@walletconnect/utils");
 const utils_2 = require("./utils");
 const sdk_1 = require("./sdk");
+const web3_utils_1 = require("web3-utils");
 class V2SDK extends sdk_1.SDK {
     constructor(opts) {
         super();
         this.accounts = [];
         this.cached = new cached_1.Cached();
+        this.version = 2;
         this.getSessionStatus = (address, brandName) => {
             const topic = this.findTopic({
                 address,
@@ -203,6 +205,23 @@ class V2SDK extends sdk_1.SDK {
             });
         });
     }
+    switchEthereumChain(chainId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const payload = this.cached.getTopic(this.currentTopic);
+            return this.client.request({
+                request: {
+                    method: 'wallet_switchEthereumChain',
+                    params: [
+                        {
+                            chainId: (0, web3_utils_1.toHex)(chainId)
+                        }
+                    ]
+                },
+                topic: this.currentTopic,
+                chainId: [payload.namespace, payload.chainId].join(':')
+            });
+        });
+    }
     signPersonalMessage(address, message, { brandName = 'JADE' }) {
         return __awaiter(this, void 0, void 0, function* () {
             const account = this.findAccount({
@@ -375,7 +394,13 @@ class V2SDK extends sdk_1.SDK {
     createSession(brandName, chainId = 1, curAccount) {
         return __awaiter(this, void 0, void 0, function* () {
             const { uri, approval } = yield this.client.connect({
-                requiredNamespaces: (0, helper_1.getRequiredNamespaces)([`eip155:${chainId}`])
+                requiredNamespaces: (0, helper_1.getRequiredNamespaces)([`eip155:${chainId}`]),
+                optionalNamespaces: {
+                    [`eip155:${chainId}`]: {
+                        methods: ['wallet_switchEthereumChain'],
+                        events: []
+                    }
+                }
             });
             approval().then((session) => {
                 const metaData = session.peer.metadata;

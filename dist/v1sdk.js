@@ -34,6 +34,7 @@ class V1SDK extends sdk_1.SDK {
         this.currentConnector = null;
         this.connectors = {};
         this.currentConnectParams = null;
+        this.version = 1;
         this.initConnector = (brandName) => __awaiter(this, void 0, void 0, function* () {
             let address = null;
             const connector = yield this.createConnector(brandName);
@@ -327,6 +328,9 @@ class V1SDK extends sdk_1.SDK {
         this.resend = () => {
             var _a;
             (_a = this.onAfterConnect) === null || _a === void 0 ? void 0 : _a.call(this, ...this.currentConnectParams);
+        };
+        this.switchEthereumChain = () => {
+            throw new Error('Method not implemented.');
         };
         this.accounts = opts.accounts || [];
     }
