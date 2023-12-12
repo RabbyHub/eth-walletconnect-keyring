@@ -1,7 +1,4 @@
 // https://github.com/MetaMask/eth-simple-keyring#the-keyring-class-protocol
-import { EventEmitter } from 'events';
-import { isAddress } from 'web3-utils';
-import { AccountData, addHexPrefix, bufferToHex } from 'ethereumjs-util';
 import WalletConnect from '@rabby-wallet/wc-client';
 import { IClientMeta } from '@rabby-wallet/wc-types';
 import {
@@ -23,6 +20,8 @@ import {
   Account,
   ConstructorOptions
 } from './type';
+import KeyValueStorage from '@walletconnect/keyvaluestorage';
+const storage = new KeyValueStorage({});
 
 export const DEFAULT_BRIDGE = 'https://derelay.rabby.io';
 
@@ -168,15 +167,18 @@ export class V1SDK extends SDK {
   }
 
   createConnector = async (brandName: string, curAccount?: Account) => {
-    if (isBrowser() && localStorage.getItem('walletconnect')) {
+    if (isBrowser()) {
       // always clear walletconnect cache
-      localStorage.removeItem('walletconnect');
+      storage.removeItem('walletconnect');
     }
     const connector = new WalletConnect({
       bridge: DEFAULT_BRIDGE,
       clientMeta: this.clientMeta!
     });
+    console.log('create connect');
     connector.on('connect', (error, payload) => {
+      console.log('error', error);
+      console.log('payload', payload);
       if (payload?.params[0]?.accounts) {
         const [account] = payload.params[0].accounts;
         const buildInBrand = this.getBuildInBrandName(

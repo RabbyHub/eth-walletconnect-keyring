@@ -1,3 +1,5 @@
+import KeyValueStorage from '@walletconnect/keyvaluestorage';
+
 export interface Data {
   address: string;
   brandName: string;
@@ -9,14 +11,17 @@ export interface Data {
   namespace?: string;
 }
 
+const storage = new KeyValueStorage();
+
 export class Cached {
   topics: Map<string, Data> = new Map();
 
   constructor() {
-    const topics = localStorage.getItem('wc_topics');
-    if (topics) {
-      this.topics = new Map(JSON.parse(topics));
-    }
+    storage.getItem('wc_topics').then((topics) => {
+      if (topics) {
+        this.topics = new Map(JSON.parse(topics));
+      }
+    });
   }
 
   getTopic(topic: string) {
@@ -25,12 +30,12 @@ export class Cached {
 
   setTopic(topic: string, data: Data) {
     this.topics.set(topic, data);
-    localStorage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
+    storage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
   }
 
   deleteTopic(topic: string) {
     this.topics.delete(topic);
-    localStorage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
+    storage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
   }
 
   updateTopic(topic: string, data: Partial<Data>) {

@@ -1,7 +1,6 @@
 import SignClient from '@walletconnect/sign-client';
 import { SessionTypes } from '@walletconnect/types';
 import { Cached } from './cached';
-import EventEmitter from 'events';
 import {
   DEFAULT_EIP_155_EVENTS,
   checkBrandName,
