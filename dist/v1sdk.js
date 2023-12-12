@@ -13,11 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.V1SDK = exports.DEFAULT_BRIDGE = void 0;
+// https://github.com/MetaMask/eth-simple-keyring#the-keyring-class-protocol
 const wc_client_1 = __importDefault(require("@rabby-wallet/wc-client"));
 const utils_1 = require("./utils");
 const sdk_1 = require("./sdk");
 const helper_1 = require("./helper");
 const type_1 = require("./type");
+const keyvaluestorage_1 = __importDefault(require("@walletconnect/keyvaluestorage"));
+const storage = new keyvaluestorage_1.default({});
 exports.DEFAULT_BRIDGE = 'https://derelay.rabby.io';
 class V1SDK extends sdk_1.SDK {
     constructor(opts) {
@@ -60,16 +63,19 @@ class V1SDK extends sdk_1.SDK {
             return connector;
         });
         this.createConnector = (brandName, curAccount) => __awaiter(this, void 0, void 0, function* () {
-            if ((0, utils_1.isBrowser)() && localStorage.getItem('walletconnect')) {
+            if ((0, utils_1.isBrowser)()) {
                 // always clear walletconnect cache
-                localStorage.removeItem('walletconnect');
+                storage.removeItem('walletconnect');
             }
             const connector = new wc_client_1.default({
                 bridge: exports.DEFAULT_BRIDGE,
                 clientMeta: this.clientMeta
             });
+            console.log('create connect');
             connector.on('connect', (error, payload) => {
                 var _a, _b, _c, _d, _e;
+                console.log('error', error);
+                console.log('payload', payload);
                 if ((_a = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _a === void 0 ? void 0 : _a.accounts) {
                     const [account] = payload.params[0].accounts;
                     const buildInBrand = this.getBuildInBrandName(brandName, (_b = payload.params[0].peerMeta) === null || _b === void 0 ? void 0 : _b.name, 

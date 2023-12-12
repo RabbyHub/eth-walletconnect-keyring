@@ -1,24 +1,30 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Cached = void 0;
+const keyvaluestorage_1 = __importDefault(require("@walletconnect/keyvaluestorage"));
+const storage = new keyvaluestorage_1.default();
 class Cached {
     constructor() {
         this.topics = new Map();
-        const topics = localStorage.getItem('wc_topics');
-        if (topics) {
-            this.topics = new Map(JSON.parse(topics));
-        }
+        storage.getItem('wc_topics').then((topics) => {
+            if (topics) {
+                this.topics = new Map(JSON.parse(topics));
+            }
+        });
     }
     getTopic(topic) {
         return this.topics.get(topic);
     }
     setTopic(topic, data) {
         this.topics.set(topic, data);
-        localStorage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
+        storage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
     }
     deleteTopic(topic) {
         this.topics.delete(topic);
-        localStorage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
+        storage.setItem('wc_topics', JSON.stringify(Array.from(this.topics)));
     }
     updateTopic(topic, data) {
         if (this.topics.has(topic)) {
