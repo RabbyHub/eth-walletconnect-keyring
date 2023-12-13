@@ -25,6 +25,7 @@ export interface Account {
   address: string;
   realBrandName?: string;
   realBrandUrl?: string;
+  deepLink?: string;
 }
 
 export interface ConstructorOptions {
