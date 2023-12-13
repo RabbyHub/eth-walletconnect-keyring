@@ -410,7 +410,7 @@ export class V1SDK extends SDK {
   };
 
   init = async (address: string, brandName: string) => {
-    if (isBrowser() && localStorage.getItem('walletconnect')) {
+    if (isBrowser()) {
       // always clear walletconnect cache
       localStorage.removeItem('walletconnect');
     }

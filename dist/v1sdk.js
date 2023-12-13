@@ -262,7 +262,7 @@ class V1SDK extends sdk_1.SDK {
         });
         this.init = (address, brandName) => __awaiter(this, void 0, void 0, function* () {
             var _a, _b, _c, _d;
-            if ((0, utils_1.isBrowser)() && localStorage.getItem('walletconnect')) {
+            if ((0, utils_1.isBrowser)()) {
                 // always clear walletconnect cache
                 localStorage.removeItem('walletconnect');
             }
