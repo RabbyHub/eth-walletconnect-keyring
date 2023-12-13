@@ -20,8 +20,6 @@ import {
   Account,
   ConstructorOptions
 } from './type';
-import KeyValueStorage from '@walletconnect/keyvaluestorage';
-const storage = new KeyValueStorage({});
 
 export const DEFAULT_BRIDGE = 'https://derelay.rabby.io';
 
@@ -66,6 +64,7 @@ export class V1SDK extends SDK {
   constructor(opts: ConstructorOptions) {
     super();
     this.accounts = opts.accounts || [];
+    this.clientMeta = opts.clientMeta;
   }
 
   initConnector = async (brandName: string) => {
@@ -167,18 +166,15 @@ export class V1SDK extends SDK {
   }
 
   createConnector = async (brandName: string, curAccount?: Account) => {
-    if (isBrowser()) {
+    if (isBrowser() && typeof localStorage !== 'undefined') {
       // always clear walletconnect cache
-      storage.removeItem('walletconnect');
+      localStorage.removeItem('walletconnect');
     }
     const connector = new WalletConnect({
       bridge: DEFAULT_BRIDGE,
       clientMeta: this.clientMeta!
     });
-    console.log('create connect');
     connector.on('connect', (error, payload) => {
-      console.log('error', error);
-      console.log('payload', payload);
       if (payload?.params[0]?.accounts) {
         const [account] = payload.params[0].accounts;
         const buildInBrand = this.getBuildInBrandName(
@@ -410,7 +406,7 @@ export class V1SDK extends SDK {
   };
 
   init = async (address: string, brandName: string) => {
-    if (isBrowser()) {
+    if (isBrowser() && typeof localStorage !== 'undefined') {
       // always clear walletconnect cache
       localStorage.removeItem('walletconnect');
     }

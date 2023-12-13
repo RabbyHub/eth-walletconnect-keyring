@@ -19,8 +19,6 @@ const utils_1 = require("./utils");
 const sdk_1 = require("./sdk");
 const helper_1 = require("./helper");
 const type_1 = require("./type");
-const keyvaluestorage_1 = __importDefault(require("@walletconnect/keyvaluestorage"));
-const storage = new keyvaluestorage_1.default({});
 exports.DEFAULT_BRIDGE = 'https://derelay.rabby.io';
 class V1SDK extends sdk_1.SDK {
     constructor(opts) {
@@ -63,19 +61,16 @@ class V1SDK extends sdk_1.SDK {
             return connector;
         });
         this.createConnector = (brandName, curAccount) => __awaiter(this, void 0, void 0, function* () {
-            if ((0, utils_1.isBrowser)()) {
+            if ((0, utils_1.isBrowser)() && typeof localStorage !== 'undefined') {
                 // always clear walletconnect cache
-                storage.removeItem('walletconnect');
+                localStorage.removeItem('walletconnect');
             }
             const connector = new wc_client_1.default({
                 bridge: exports.DEFAULT_BRIDGE,
                 clientMeta: this.clientMeta
             });
-            console.log('create connect');
             connector.on('connect', (error, payload) => {
                 var _a, _b, _c, _d, _e;
-                console.log('error', error);
-                console.log('payload', payload);
                 if ((_a = payload === null || payload === void 0 ? void 0 : payload.params[0]) === null || _a === void 0 ? void 0 : _a.accounts) {
                     const [account] = payload.params[0].accounts;
                     const buildInBrand = this.getBuildInBrandName(brandName, (_b = payload.params[0].peerMeta) === null || _b === void 0 ? void 0 : _b.name, 
@@ -262,7 +257,7 @@ class V1SDK extends sdk_1.SDK {
         });
         this.init = (address, brandName) => __awaiter(this, void 0, void 0, function* () {
             var _a, _b, _c, _d;
-            if ((0, utils_1.isBrowser)()) {
+            if ((0, utils_1.isBrowser)() && typeof localStorage !== 'undefined') {
                 // always clear walletconnect cache
                 localStorage.removeItem('walletconnect');
             }
@@ -339,6 +334,7 @@ class V1SDK extends sdk_1.SDK {
             throw new Error('Method not implemented.');
         };
         this.accounts = opts.accounts || [];
+        this.clientMeta = opts.clientMeta;
     }
     getConnectorInfoByClientId(clientId) {
         const connectorKey = Object.keys(this.connectors).find((key) => { var _a, _b; return ((_b = (_a = this.connectors[key]) === null || _a === void 0 ? void 0 : _a.connector) === null || _b === void 0 ? void 0 : _b.clientId) === clientId; });
