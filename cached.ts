@@ -9,6 +9,7 @@ export interface Data {
   sessionStatus?: string;
   networkDelay?: number;
   namespace?: string;
+  deepLink: string;
 }
 
 const storage = new KeyValueStorage();
@@ -19,7 +20,9 @@ export class Cached {
   constructor() {
     storage.getItem('wc_topics').then((topics) => {
       if (topics) {
-        this.topics = new Map(JSON.parse(topics));
+        const topicsArr =
+          typeof topics === 'object' ? topics : JSON.parse(topics);
+        this.topics = new Map(topicsArr);
       }
     });
   }
@@ -47,7 +50,7 @@ export class Cached {
     }
   }
 
-  findTopic(data: Data): string | undefined {
+  findTopic(data: Partial<Data>): string | undefined {
     const { address, brandName, chainId } = data;
 
     const keys = this.topics.keys();

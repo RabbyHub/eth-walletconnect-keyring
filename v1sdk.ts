@@ -810,7 +810,8 @@ export class V1SDK extends SDK {
     return {
       address,
       brandName: connector.brandName,
-      chainId: connector.chainId
+      chainId: connector.chainId,
+      deepLink: connector.connector.uri
     };
   };
 

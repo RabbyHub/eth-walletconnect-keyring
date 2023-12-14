@@ -364,14 +364,18 @@ export class V2SDK extends SDK {
     return { uri };
   }
 
-  // initialize the connector
-  async initConnector(brandName: string, chainId?: number, account?: Account) {
+  async waitInitClient() {
     // wait 1min
     let loopCount = 0;
     while (!this.client && loopCount < 60) {
       loopCount++;
       await wait(() => this.client, 1000);
     }
+  }
+
+  // initialize the connector
+  async initConnector(brandName: string, chainId?: number, account?: Account) {
+    this.waitInitClient();
 
     const uri = await this.createSession(brandName, chainId, account);
     this.emit('inited', uri);
@@ -485,7 +489,8 @@ export class V2SDK extends SDK {
         address: account.address,
         brandName: session.peer.metadata.name,
         chainId: account.chainId,
-        namespace: account.namespace
+        namespace: account.namespace,
+        deepLink: uri!
       };
 
       // check brandName
@@ -607,4 +612,28 @@ export class V2SDK extends SDK {
       });
     }
   };
+
+  async checkClientIsCreate({
+    address,
+    brandName
+  }: {
+    address: string;
+    brandName: string;
+  }) {
+    const topic = this.findTopic({
+      address,
+      brandName
+    });
+
+    if (!topic) {
+      this.updateSessionStatus('DISCONNECTED', {
+        address,
+        brandName
+      });
+      return WALLETCONNECT_SESSION_STATUS_MAP.DISCONNECTED;
+    }
+    await this.waitInitClient();
+
+    return this.getSessionStatus(address, brandName);
+  }
 }

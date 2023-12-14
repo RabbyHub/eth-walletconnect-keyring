@@ -224,4 +224,19 @@ export class WalletConnectKeyring extends EventEmitter {
 
     if (sdk.version === 2) return sdk.switchEthereumChain(chainId);
   };
+
+  checkClientIsCreate = ({
+    address,
+    brandName
+  }: {
+    address: string;
+    brandName: string;
+  }) => {
+    const sdk = this.getSDK(brandName);
+    if (sdk.version === 2) {
+      return (sdk as V2SDK).checkClientIsCreate({ address, brandName });
+    } else {
+      throw new Error('checkConnection is not supported in v1');
+    }
+  };
 }
