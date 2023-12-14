@@ -334,8 +334,7 @@ class V2SDK extends sdk_1.SDK {
             return { uri };
         });
     }
-    // initialize the connector
-    initConnector(brandName, chainId, account) {
+    waitInitClient() {
         return __awaiter(this, void 0, void 0, function* () {
             // wait 1min
             let loopCount = 0;
@@ -343,6 +342,12 @@ class V2SDK extends sdk_1.SDK {
                 loopCount++;
                 yield (0, utils_2.wait)(() => this.client, 1000);
             }
+        });
+    }
+    // initialize the connector
+    initConnector(brandName, chainId, account) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.waitInitClient();
             const uri = yield this.createSession(brandName, chainId, account);
             this.emit('inited', uri);
             return { uri };
@@ -404,7 +409,8 @@ class V2SDK extends sdk_1.SDK {
                     address: account.address,
                     brandName: session.peer.metadata.name,
                     chainId: account.chainId,
-                    namespace: account.namespace
+                    namespace: account.namespace,
+                    deepLink: uri
                 };
                 // check brandName
                 const buildInBrand = (0, helper_1.getBuildInBrandName)(brandName, metaData.name, !!curAccount);
@@ -477,6 +483,23 @@ class V2SDK extends sdk_1.SDK {
         const topic = this.findTopic(account);
         this.cached.updateTopic(topic, {
             status
+        });
+    }
+    checkClientIsCreate({ address, brandName }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const topic = this.findTopic({
+                address,
+                brandName
+            });
+            if (!topic) {
+                this.updateSessionStatus('DISCONNECTED', {
+                    address,
+                    brandName
+                });
+                return type_1.WALLETCONNECT_SESSION_STATUS_MAP.DISCONNECTED;
+            }
+            yield this.waitInitClient();
+            return this.getSessionStatus(address, brandName);
         });
     }
 }

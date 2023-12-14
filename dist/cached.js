@@ -11,7 +11,8 @@ class Cached {
         this.topics = new Map();
         storage.getItem('wc_topics').then((topics) => {
             if (topics) {
-                this.topics = new Map(JSON.parse(topics));
+                const topicsArr = typeof topics === 'object' ? topics : JSON.parse(topics);
+                this.topics = new Map(topicsArr);
             }
         });
     }

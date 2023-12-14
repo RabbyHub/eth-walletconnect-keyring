@@ -316,7 +316,8 @@ class V1SDK extends sdk_1.SDK {
             return {
                 address,
                 brandName: connector.brandName,
-                chainId: connector.chainId
+                chainId: connector.chainId,
+                deepLink: connector.connector.uri
             };
         };
         this.getSessionNetworkDelay = (address, brandName) => {
