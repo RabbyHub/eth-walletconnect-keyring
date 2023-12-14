@@ -93,12 +93,9 @@ class V2SDK extends sdk_1.SDK {
                 }
             });
             this.client.on('session_delete', (session) => {
-                console.log('session_delete', session);
                 this._closeConnector({ topic: session.topic });
             });
-            this.client.on('session_update', console.log);
             this.client.on('session_event', ({ topic, params }) => {
-                console.log('session_event', topic, params);
                 const data = this.cached.getTopic(topic);
                 if (!data)
                     return;
@@ -128,9 +125,7 @@ class V2SDK extends sdk_1.SDK {
                     }
                 }
             });
-            this.client.on('session_ping', console.log);
             this.client.on('session_expire', (session) => {
-                console.log('session_expire', session);
                 this._closeConnector(session);
             });
         });
