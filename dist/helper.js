@@ -38,7 +38,7 @@ exports.parseNamespaces = parseNamespaces;
 var DEFAULT_EIP155_METHODS;
 (function (DEFAULT_EIP155_METHODS) {
     DEFAULT_EIP155_METHODS["ETH_SEND_TRANSACTION"] = "eth_sendTransaction";
-    DEFAULT_EIP155_METHODS["ETH_SIGN_TRANSACTION"] = "eth_signTransaction";
+    // ETH_SIGN_TRANSACTION = 'eth_signTransaction',
     DEFAULT_EIP155_METHODS["PERSONAL_SIGN"] = "personal_sign";
     DEFAULT_EIP155_METHODS["ETH_SIGN_TYPED_DATA"] = "eth_signTypedData";
 })(DEFAULT_EIP155_METHODS = exports.DEFAULT_EIP155_METHODS || (exports.DEFAULT_EIP155_METHODS = {}));

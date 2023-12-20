@@ -45,7 +45,7 @@ export const parseNamespaces = (namespaces: SessionTypes.Namespaces) => {
  */
 export enum DEFAULT_EIP155_METHODS {
   ETH_SEND_TRANSACTION = 'eth_sendTransaction',
-  ETH_SIGN_TRANSACTION = 'eth_signTransaction',
+  // ETH_SIGN_TRANSACTION = 'eth_signTransaction',
   PERSONAL_SIGN = 'personal_sign',
   ETH_SIGN_TYPED_DATA = 'eth_signTypedData'
 }
