@@ -375,7 +375,7 @@ export class V2SDK extends SDK {
 
   // initialize the connector
   async initConnector(brandName: string, chainId?: number, account?: Account) {
-    this.waitInitClient();
+    await this.waitInitClient();
 
     const uri = await this.createSession(brandName, chainId, account);
     this.emit('inited', uri);
