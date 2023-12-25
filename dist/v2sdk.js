@@ -347,7 +347,7 @@ class V2SDK extends sdk_1.SDK {
     // initialize the connector
     initConnector(brandName, chainId, account) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.waitInitClient();
+            yield this.waitInitClient();
             const uri = yield this.createSession(brandName, chainId, account);
             this.emit('inited', uri);
             return { uri };
