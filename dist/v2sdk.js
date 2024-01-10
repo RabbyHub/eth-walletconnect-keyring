@@ -141,15 +141,15 @@ class V2SDK extends sdk_1.SDK {
             }
             const txData = {
                 to: transaction.to.toString(),
-                value: `0x${transaction.value.toString('hex')}`,
+                value: (0, utils_2.convertToBigint)(transaction.value),
                 data: `0x${transaction.data.toString('hex')}`,
-                nonce: `0x${transaction.nonce.toString('hex')}`,
-                gasLimit: `0x${transaction.gasLimit.toString('hex')}`,
-                gasPrice: `0x${transaction.gasPrice
-                    ? transaction.gasPrice.toString('hex')
-                    : transaction.maxFeePerGas.toString('hex')}`
+                nonce: (0, utils_2.convertToBigint)(transaction.nonce),
+                gasLimit: (0, utils_2.convertToBigint)(transaction.gasLimit),
+                gasPrice: typeof transaction.gasPrice !== 'undefined'
+                    ? (0, utils_2.convertToBigint)(transaction.gasPrice)
+                    : (0, utils_2.convertToBigint)(transaction.maxFeePerGas)
             };
-            const txChainId = transaction.common.chainIdBN().toNumber();
+            const txChainId = (0, utils_2.getChainId)(transaction.common);
             this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
                 const payload = this.cached.getTopic(topic);
                 if (payload) {
@@ -163,6 +163,24 @@ class V2SDK extends sdk_1.SDK {
                     }
                 }
                 try {
+                    console.log({
+                        request: {
+                            method: 'eth_sendTransaction',
+                            params: [
+                                {
+                                    data: (0, helper_1.sanitizeHex)(txData.data),
+                                    from: address,
+                                    gas: (0, helper_1.sanitizeHex)(txData.gasLimit),
+                                    gasPrice: (0, helper_1.sanitizeHex)(txData.gasPrice),
+                                    nonce: (0, helper_1.sanitizeHex)(txData.nonce),
+                                    to: (0, helper_1.sanitizeHex)(txData.to),
+                                    value: (0, helper_1.sanitizeHex)(txData.value) || '0x0' // prevent 0x
+                                }
+                            ]
+                        },
+                        topic,
+                        chainId: [payload.namespace, txChainId].join(':')
+                    });
                     const result = yield this.client.request({
                         request: {
                             method: 'eth_sendTransaction',

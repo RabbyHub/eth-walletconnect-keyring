@@ -23,7 +23,7 @@ import {
   Transaction,
   FeeMarketEIP1559Transaction
 } from '@ethereumjs/tx';
-import { wait } from './utils';
+import { convertToBigint, getChainId, wait } from './utils';
 import { SDK } from './sdk';
 import { toHex } from 'web3-utils';
 
@@ -115,19 +115,18 @@ export class V2SDK extends SDK {
 
     const txData: JsonTx = {
       to: transaction.to!.toString(),
-      value: `0x${transaction.value.toString('hex')}`,
+      value: convertToBigint(transaction.value),
       data: `0x${transaction.data.toString('hex')}`,
-      nonce: `0x${transaction.nonce.toString('hex')}`,
-      gasLimit: `0x${transaction.gasLimit.toString('hex')}`,
-      gasPrice: `0x${
-        (transaction as Transaction).gasPrice
-          ? (transaction as Transaction).gasPrice.toString('hex')
-          : (transaction as FeeMarketEIP1559Transaction).maxFeePerGas.toString(
-              'hex'
+      nonce: convertToBigint(transaction.nonce),
+      gasLimit: convertToBigint(transaction.gasLimit),
+      gasPrice:
+        typeof (transaction as Transaction).gasPrice !== 'undefined'
+          ? convertToBigint((transaction as Transaction).gasPrice)
+          : convertToBigint(
+              (transaction as FeeMarketEIP1559Transaction).maxFeePerGas
             )
-      }`
     };
-    const txChainId = transaction.common.chainIdBN().toNumber();
+    const txChainId = getChainId(transaction.common);
     this.onAfterSessionCreated = async (topic) => {
       const payload = this.cached.getTopic(topic);
       if (payload) {
@@ -143,6 +142,24 @@ export class V2SDK extends SDK {
         }
       }
       try {
+        console.log({
+          request: {
+            method: 'eth_sendTransaction',
+            params: [
+              {
+                data: sanitizeHex(txData.data),
+                from: address,
+                gas: sanitizeHex(txData.gasLimit),
+                gasPrice: sanitizeHex(txData.gasPrice),
+                nonce: sanitizeHex(txData.nonce),
+                to: sanitizeHex(txData.to),
+                value: sanitizeHex(txData.value) || '0x0' // prevent 0x
+              }
+            ]
+          },
+          topic,
+          chainId: [payload!.namespace, txChainId].join(':')
+        });
         const result = await this.client.request({
           request: {
             method: 'eth_sendTransaction',

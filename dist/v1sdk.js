@@ -386,15 +386,15 @@ class V1SDK extends sdk_1.SDK {
             }
             const txData = {
                 to: transaction.to.toString(),
-                value: `0x${transaction.value.toString('hex')}`,
+                value: (0, utils_1.convertToBigint)(transaction.value),
                 data: `0x${transaction.data.toString('hex')}`,
-                nonce: `0x${transaction.nonce.toString('hex')}`,
-                gasLimit: `0x${transaction.gasLimit.toString('hex')}`,
-                gasPrice: `0x${transaction.gasPrice
-                    ? transaction.gasPrice.toString('hex')
-                    : transaction.maxFeePerGas.toString('hex')}`
+                nonce: (0, utils_1.convertToBigint)(transaction.nonce),
+                gasLimit: (0, utils_1.convertToBigint)(transaction.gasLimit),
+                gasPrice: typeof transaction.gasPrice !== 'undefined'
+                    ? (0, utils_1.convertToBigint)(transaction.gasPrice)
+                    : (0, utils_1.convertToBigint)(transaction.maxFeePerGas)
             };
-            const txChainId = transaction.common.chainIdBN().toNumber();
+            const txChainId = (0, utils_1.getChainId)(transaction.common);
             this.onAfterConnect = (error, payload) => __awaiter(this, void 0, void 0, function* () {
                 if (error) {
                     this.updateCurrentStatus(type_1.WALLETCONNECT_STATUS_MAP.FAILD, account, error);

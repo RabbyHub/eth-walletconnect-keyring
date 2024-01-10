@@ -7,7 +7,7 @@ import {
   Transaction,
   FeeMarketEIP1559Transaction
 } from '@ethereumjs/tx';
-import { isBrowser, wait } from './utils';
+import { convertToBigint, getChainId, isBrowser, wait } from './utils';
 import { SDK } from './sdk';
 import { sanitizeHex } from './helper';
 import {
@@ -480,19 +480,18 @@ export class V1SDK extends SDK {
 
     const txData: JsonTx = {
       to: transaction.to!.toString(),
-      value: `0x${transaction.value.toString('hex')}`,
+      value: convertToBigint(transaction.value),
       data: `0x${transaction.data.toString('hex')}`,
-      nonce: `0x${transaction.nonce.toString('hex')}`,
-      gasLimit: `0x${transaction.gasLimit.toString('hex')}`,
-      gasPrice: `0x${
-        (transaction as Transaction).gasPrice
-          ? (transaction as Transaction).gasPrice.toString('hex')
-          : (transaction as FeeMarketEIP1559Transaction).maxFeePerGas.toString(
-              'hex'
+      nonce: convertToBigint(transaction.nonce),
+      gasLimit: convertToBigint(transaction.gasLimit),
+      gasPrice:
+        typeof (transaction as Transaction).gasPrice !== 'undefined'
+          ? convertToBigint((transaction as Transaction).gasPrice)
+          : convertToBigint(
+              (transaction as FeeMarketEIP1559Transaction).maxFeePerGas
             )
-      }`
     };
-    const txChainId = transaction.common.chainIdBN().toNumber();
+    const txChainId = getChainId(transaction.common);
     this.onAfterConnect = async (error?, payload?) => {
       if (error) {
         this.updateCurrentStatus(
