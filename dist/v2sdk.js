@@ -163,24 +163,6 @@ class V2SDK extends sdk_1.SDK {
                     }
                 }
                 try {
-                    console.log({
-                        request: {
-                            method: 'eth_sendTransaction',
-                            params: [
-                                {
-                                    data: (0, helper_1.sanitizeHex)(txData.data),
-                                    from: address,
-                                    gas: (0, helper_1.sanitizeHex)(txData.gasLimit),
-                                    gasPrice: (0, helper_1.sanitizeHex)(txData.gasPrice),
-                                    nonce: (0, helper_1.sanitizeHex)(txData.nonce),
-                                    to: (0, helper_1.sanitizeHex)(txData.to),
-                                    value: (0, helper_1.sanitizeHex)(txData.value) || '0x0' // prevent 0x
-                                }
-                            ]
-                        },
-                        topic,
-                        chainId: [payload.namespace, txChainId].join(':')
-                    });
                     const result = yield this.client.request({
                         request: {
                             method: 'eth_sendTransaction',

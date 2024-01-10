@@ -13,7 +13,6 @@ exports.wait = wait;
 const isBrowser = () => typeof window !== 'undefined';
 exports.isBrowser = isBrowser;
 const convertToBigint = (value) => {
-    console.log('value', value, typeof value);
     return typeof value === 'bigint'
         ? `0x${value.toString(16)}`
         : `0x${value.toString('hex')}`;
