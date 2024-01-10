@@ -10,7 +10,6 @@ export const wait = (fn: () => void, ms = 1000) => {
 export const isBrowser = () => typeof window !== 'undefined';
 
 export const convertToBigint = (value: any) => {
-  console.log('value', value, typeof value);
   return typeof value === 'bigint'
     ? `0x${value.toString(16)}`
     : `0x${value.toString('hex')}`;
