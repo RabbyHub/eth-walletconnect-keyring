@@ -87,6 +87,7 @@ class V2SDK extends sdk_1.SDK {
                 projectId: this.options.projectId,
                 metadata: this.options.clientMeta
             }).finally(() => {
+                console.log('done');
                 this.loading = false;
             });
             // clear inactive session
@@ -344,7 +345,13 @@ class V2SDK extends sdk_1.SDK {
             let loopCount = 0;
             while (!this.client && loopCount < 60) {
                 if (!this.loading) {
-                    this.initSDK();
+                    console.log('???');
+                    try {
+                        yield this.initSDK();
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
                 }
                 loopCount++;
                 yield (0, utils_2.wait)(() => this.client, 1000);

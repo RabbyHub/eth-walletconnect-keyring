@@ -373,7 +373,11 @@ export class V2SDK extends SDK {
     let loopCount = 0;
     while (!this.client && loopCount < 60) {
       if (!this.loading) {
-        this.initSDK();
+        try {
+          await this.initSDK();
+        } catch (e) {
+          console.error(e);
+        }
       }
       loopCount++;
       await wait(() => this.client, 1000);
