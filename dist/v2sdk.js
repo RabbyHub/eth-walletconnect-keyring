@@ -27,6 +27,7 @@ class V2SDK extends sdk_1.SDK {
         this.accounts = [];
         this.cached = new cached_1.Cached();
         this.version = 2;
+        this.loading = false;
         this.getSessionStatus = (address, brandName) => {
             const topic = this.findTopic({
                 address,
@@ -81,9 +82,13 @@ class V2SDK extends sdk_1.SDK {
     }
     initSDK() {
         return __awaiter(this, void 0, void 0, function* () {
+            this.loading = true;
             this.client = yield sign_client_1.default.init({
                 projectId: this.options.projectId,
                 metadata: this.options.clientMeta
+            }).finally(() => {
+                console.log('done');
+                this.loading = false;
             });
             // clear inactive session
             const activeSessions = this.client.session.keys;
@@ -339,6 +344,10 @@ class V2SDK extends sdk_1.SDK {
             // wait 1min
             let loopCount = 0;
             while (!this.client && loopCount < 60) {
+                if (!this.loading) {
+                    console.log('???');
+                    this.initSDK();
+                }
                 loopCount++;
                 yield (0, utils_2.wait)(() => this.client, 1000);
             }

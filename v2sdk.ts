@@ -40,6 +40,8 @@ export class V2SDK extends SDK {
 
   version = 2;
 
+  loading = false;
+
   constructor(opts: ConstructorOptions) {
     super();
     this.options = opts;
@@ -48,9 +50,12 @@ export class V2SDK extends SDK {
   }
 
   async initSDK() {
+    this.loading = true;
     this.client = await SignClient.init({
       projectId: this.options.projectId,
       metadata: this.options.clientMeta
+    }).finally(() => {
+      this.loading = false;
     });
 
     // clear inactive session
@@ -367,6 +372,9 @@ export class V2SDK extends SDK {
     // wait 1min
     let loopCount = 0;
     while (!this.client && loopCount < 60) {
+      if (!this.loading) {
+        this.initSDK();
+      }
       loopCount++;
       await wait(() => this.client, 1000);
     }
