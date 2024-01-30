@@ -1,5 +1,5 @@
 import SignClient from '@walletconnect/sign-client';
-import { SessionTypes } from '@walletconnect/types';
+import { EngineTypes, SessionTypes } from '@walletconnect/types';
 import { Cached } from './cached';
 import {
   DEFAULT_EIP_155_EVENTS,
@@ -11,6 +11,7 @@ import {
 } from './helper';
 import {
   Account,
+  BuildInWalletPeerName,
   COMMON_WALLETCONNECT,
   ConstructorOptions,
   WALLETCONNECT_SESSION_STATUS_MAP,
@@ -483,15 +484,21 @@ export class V2SDK extends SDK {
     chainId = 1,
     curAccount?: Account
   ) {
-    const { uri, approval } = await this.client.connect({
-      requiredNamespaces: getRequiredNamespaces([`eip155:${chainId}`]),
-      optionalNamespaces: {
+    const params: EngineTypes.ConnectParams = {
+      requiredNamespaces: getRequiredNamespaces([`eip155:${chainId}`])
+    };
+
+    // HOTFIX: some wallet do not support optionalNamespaces
+    if (![BuildInWalletPeerName.IMTOKEN].includes(brandName)) {
+      params.optionalNamespaces = {
         [`eip155:${chainId}`]: {
           methods: ['wallet_switchEthereumChain'],
           events: []
         }
-      }
-    });
+      };
+    }
+
+    const { uri, approval } = await this.client.connect(params);
 
     approval().then((session) => {
       const metaData = session.peer.metadata;
