@@ -405,15 +405,19 @@ class V2SDK extends sdk_1.SDK {
     }
     createSession(brandName, chainId = 1, curAccount) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { uri, approval } = yield this.client.connect({
-                requiredNamespaces: (0, helper_1.getRequiredNamespaces)([`eip155:${chainId}`]),
-                optionalNamespaces: {
+            const params = {
+                requiredNamespaces: (0, helper_1.getRequiredNamespaces)([`eip155:${chainId}`])
+            };
+            // HOTFIX: some wallet do not support optionalNamespaces
+            if (![type_1.BuildInWalletPeerName.IMTOKEN].includes(brandName)) {
+                params.optionalNamespaces = {
                     [`eip155:${chainId}`]: {
                         methods: ['wallet_switchEthereumChain'],
                         events: []
                     }
-                }
-            });
+                };
+            }
+            const { uri, approval } = yield this.client.connect(params);
             approval().then((session) => {
                 const metaData = session.peer.metadata;
                 const account = (0, helper_1.parseNamespaces)(session.namespaces)[0];
