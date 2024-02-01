@@ -5,7 +5,6 @@ import { Account, COMMON_WALLETCONNECT, ConstructorOptions } from './type';
 import { isAddress } from 'web3-utils';
 import { addHexPrefix } from 'ethereumjs-util';
 import { TypedTransaction } from '@ethereumjs/tx';
-import { SDK } from './sdk';
 
 export class WalletConnectKeyring extends EventEmitter {
   static type = 'WalletConnect';
@@ -145,14 +144,18 @@ export class WalletConnectKeyring extends EventEmitter {
     // clean onAfterSessionCreated
   }
 
-  async init(address: string, brandName: string, chainId?: number) {
+  async init(address: string, brandName: string, chainIds?: number[]) {
     const sdk = this.getSDK(brandName);
-    return sdk.init(address, brandName, chainId);
+    return sdk.init(address, brandName, chainIds);
   }
 
-  async initConnector(brandName: string, chainId?: number, account?: Account) {
+  async initConnector(
+    brandName: string,
+    chainIds?: number[],
+    account?: Account
+  ) {
     const sdk = this.getSDK(brandName);
-    return sdk.initConnector(brandName, chainId, account);
+    return sdk.initConnector(brandName, chainIds, account);
   }
 
   async scanAccount() {

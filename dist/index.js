@@ -174,16 +174,16 @@ class WalletConnectKeyring extends events_1.default {
     resetConnect() {
         // clean onAfterSessionCreated
     }
-    init(address, brandName, chainId) {
+    init(address, brandName, chainIds) {
         return __awaiter(this, void 0, void 0, function* () {
             const sdk = this.getSDK(brandName);
-            return sdk.init(address, brandName, chainId);
+            return sdk.init(address, brandName, chainIds);
         });
     }
-    initConnector(brandName, chainId, account) {
+    initConnector(brandName, chainIds, account) {
         return __awaiter(this, void 0, void 0, function* () {
             const sdk = this.getSDK(brandName);
-            return sdk.initConnector(brandName, chainId, account);
+            return sdk.initConnector(brandName, chainIds, account);
         });
     }
     scanAccount() {

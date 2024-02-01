@@ -146,7 +146,7 @@ class V2SDK extends sdk_1.SDK {
             const txData = {
                 to: transaction.to.toString(),
                 value: (0, utils_2.convertToBigint)(transaction.value),
-                data: `0x${transaction.data.toString('hex')}`,
+                data: (0, utils_2.bufferToHex)(transaction.data),
                 nonce: (0, utils_2.convertToBigint)(transaction.nonce),
                 gasLimit: (0, utils_2.convertToBigint)(transaction.gasLimit),
                 gasPrice: typeof transaction.gasPrice !== 'undefined'
@@ -157,8 +157,7 @@ class V2SDK extends sdk_1.SDK {
             this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
                 const payload = this.cached.getTopic(topic);
                 if (payload) {
-                    if (payload.address.toLowerCase() !== address.toLowerCase() ||
-                        payload.chainId !== txChainId) {
+                    if (payload.address.toLowerCase() !== address.toLowerCase()) {
                         this.updateConnectionStatus(type_1.WALLETCONNECT_STATUS_MAP.FAILD, account, {
                             message: 'Wrong address or chainId',
                             code: address.toLowerCase() === address.toLowerCase() ? 1000 : 1001
@@ -320,7 +319,7 @@ class V2SDK extends sdk_1.SDK {
         });
     }
     // initialize or find the session
-    init(address, brandName, chainId) {
+    init(address, brandName, chainIds) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const account = this.findAccount({ address, brandName });
@@ -334,7 +333,7 @@ class V2SDK extends sdk_1.SDK {
                 // switch connection status?
                 return;
             }
-            const { uri } = yield this.initConnector(brandName, chainId, account);
+            const { uri } = yield this.initConnector(brandName, chainIds, account);
             return { uri };
         });
     }
@@ -357,10 +356,10 @@ class V2SDK extends sdk_1.SDK {
         });
     }
     // initialize the connector
-    initConnector(brandName, chainId, account) {
+    initConnector(brandName, chainIds, account) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.waitInitClient();
-            const uri = yield this.createSession(brandName, chainId, account);
+            const uri = yield this.createSession(brandName, chainIds, account);
             this.emit('inited', uri);
             return { uri };
         });
@@ -368,7 +367,7 @@ class V2SDK extends sdk_1.SDK {
     scanAccount() {
         return __awaiter(this, void 0, void 0, function* () {
             const { uri, approval } = yield this.client.connect({
-                requiredNamespaces: (0, helper_1.getRequiredNamespaces)(['eip155:1'])
+                optionalNamespaces: (0, helper_1.getNamespaces)([1])
             });
             approval().then((session) => {
                 const account = (0, helper_1.parseNamespaces)(session.namespaces)[0];
@@ -403,20 +402,11 @@ class V2SDK extends sdk_1.SDK {
             return topic;
         }
     }
-    createSession(brandName, chainId = 1, curAccount) {
+    createSession(brandName, chainIds = [1], curAccount) {
         return __awaiter(this, void 0, void 0, function* () {
             const params = {
-                requiredNamespaces: (0, helper_1.getRequiredNamespaces)([`eip155:${chainId}`])
+                optionalNamespaces: (0, helper_1.getNamespaces)(chainIds)
             };
-            // HOTFIX: some wallet do not support optionalNamespaces
-            if (![type_1.BuildInWalletPeerName.IMTOKEN].includes(brandName)) {
-                params.optionalNamespaces = {
-                    [`eip155:${chainId}`]: {
-                        methods: ['wallet_switchEthereumChain'],
-                        events: []
-                    }
-                };
-            }
             const { uri, approval } = yield this.client.connect(params);
             approval().then((session) => {
                 const metaData = session.peer.metadata;

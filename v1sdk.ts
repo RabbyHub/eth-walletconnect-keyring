@@ -7,7 +7,13 @@ import {
   Transaction,
   FeeMarketEIP1559Transaction
 } from '@ethereumjs/tx';
-import { convertToBigint, getChainId, isBrowser, wait } from './utils';
+import {
+  bufferToHex,
+  convertToBigint,
+  getChainId,
+  isBrowser,
+  wait
+} from './utils';
 import { SDK } from './sdk';
 import { sanitizeHex } from './helper';
 import {
@@ -481,7 +487,7 @@ export class V1SDK extends SDK {
     const txData: JsonTx = {
       to: transaction.to!.toString(),
       value: convertToBigint(transaction.value),
-      data: `0x${transaction.data.toString('hex')}`,
+      data: bufferToHex(transaction.data),
       nonce: convertToBigint(transaction.nonce),
       gasLimit: convertToBigint(transaction.gasLimit),
       gasPrice:

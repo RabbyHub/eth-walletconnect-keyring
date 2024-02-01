@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getChainId = exports.convertToBigint = exports.isBrowser = exports.wait = void 0;
+exports.bufferToHex = exports.getChainId = exports.convertToBigint = exports.isBrowser = exports.wait = void 0;
 const wait = (fn, ms = 1000) => {
     return new Promise((resolve) => {
         setTimeout(() => {
@@ -27,3 +27,7 @@ const getChainId = (common) => {
     }
 };
 exports.getChainId = getChainId;
+const bufferToHex = (buffer) => {
+    return `0x${Buffer.from(buffer).toString('hex')}`;
+};
+exports.bufferToHex = bufferToHex;

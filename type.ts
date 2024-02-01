@@ -34,6 +34,7 @@ export interface ConstructorOptions {
   maxDuration?: number;
   projectId: string;
   v2Whitelist: string[];
+  chains: number[];
 }
 
 export const COMMON_WALLETCONNECT = ['WALLETCONNECT', 'WalletConnect'];

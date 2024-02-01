@@ -387,7 +387,7 @@ class V1SDK extends sdk_1.SDK {
             const txData = {
                 to: transaction.to.toString(),
                 value: (0, utils_1.convertToBigint)(transaction.value),
-                data: `0x${transaction.data.toString('hex')}`,
+                data: (0, utils_1.bufferToHex)(transaction.data),
                 nonce: (0, utils_1.convertToBigint)(transaction.nonce),
                 gasLimit: (0, utils_1.convertToBigint)(transaction.gasLimit),
                 gasPrice: typeof transaction.gasPrice !== 'undefined'

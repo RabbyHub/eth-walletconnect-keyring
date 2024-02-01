@@ -22,3 +22,7 @@ export const getChainId = (common) => {
     return parseInt(common.chainId());
   }
 };
+
+export const bufferToHex = (buffer: Buffer | ArrayBuffer) => {
+  return `0x${Buffer.from(buffer).toString('hex')}`;
+};

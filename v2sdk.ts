@@ -5,13 +5,12 @@ import {
   DEFAULT_EIP_155_EVENTS,
   checkBrandName,
   getBuildInBrandName,
-  getRequiredNamespaces,
+  getNamespaces,
   parseNamespaces,
   sanitizeHex
 } from './helper';
 import {
   Account,
-  BuildInWalletPeerName,
   COMMON_WALLETCONNECT,
   ConstructorOptions,
   WALLETCONNECT_SESSION_STATUS_MAP,
@@ -24,7 +23,7 @@ import {
   Transaction,
   FeeMarketEIP1559Transaction
 } from '@ethereumjs/tx';
-import { convertToBigint, getChainId, wait } from './utils';
+import { bufferToHex, convertToBigint, getChainId, wait } from './utils';
 import { SDK } from './sdk';
 import { toHex } from 'web3-utils';
 
@@ -122,7 +121,7 @@ export class V2SDK extends SDK {
     const txData: JsonTx = {
       to: transaction.to!.toString(),
       value: convertToBigint(transaction.value),
-      data: `0x${transaction.data.toString('hex')}`,
+      data: bufferToHex(transaction.data),
       nonce: convertToBigint(transaction.nonce),
       gasLimit: convertToBigint(transaction.gasLimit),
       gasPrice:
@@ -136,10 +135,7 @@ export class V2SDK extends SDK {
     this.onAfterSessionCreated = async (topic) => {
       const payload = this.cached.getTopic(topic);
       if (payload) {
-        if (
-          payload.address.toLowerCase() !== address.toLowerCase() ||
-          payload.chainId !== txChainId
-        ) {
+        if (payload.address.toLowerCase() !== address.toLowerCase()) {
           this.updateConnectionStatus(WALLETCONNECT_STATUS_MAP.FAILD, account, {
             message: 'Wrong address or chainId',
             code: address.toLowerCase() === address.toLowerCase() ? 1000 : 1001
@@ -349,7 +345,7 @@ export class V2SDK extends SDK {
   }
 
   // initialize or find the session
-  async init(address: string, brandName: string, chainId?: number) {
+  async init(address: string, brandName: string, chainIds?: number[]) {
     const account = this.findAccount({ address, brandName });
 
     if (!account) {
@@ -364,7 +360,7 @@ export class V2SDK extends SDK {
       return;
     }
 
-    const { uri } = await this.initConnector(brandName, chainId, account);
+    const { uri } = await this.initConnector(brandName, chainIds, account);
 
     return { uri };
   }
@@ -386,10 +382,14 @@ export class V2SDK extends SDK {
   }
 
   // initialize the connector
-  async initConnector(brandName: string, chainId?: number, account?: Account) {
+  async initConnector(
+    brandName: string,
+    chainIds?: number[],
+    account?: Account
+  ) {
     await this.waitInitClient();
 
-    const uri = await this.createSession(brandName, chainId, account);
+    const uri = await this.createSession(brandName, chainIds, account);
     this.emit('inited', uri);
 
     return { uri };
@@ -397,7 +397,7 @@ export class V2SDK extends SDK {
 
   async scanAccount() {
     const { uri, approval } = await this.client.connect({
-      requiredNamespaces: getRequiredNamespaces(['eip155:1'])
+      optionalNamespaces: getNamespaces([1])
     });
 
     approval().then((session) => {
@@ -481,22 +481,12 @@ export class V2SDK extends SDK {
 
   private async createSession(
     brandName: string,
-    chainId = 1,
+    chainIds: number[] = [1],
     curAccount?: Account
   ) {
     const params: EngineTypes.ConnectParams = {
-      requiredNamespaces: getRequiredNamespaces([`eip155:${chainId}`])
+      optionalNamespaces: getNamespaces(chainIds)
     };
-
-    // HOTFIX: some wallet do not support optionalNamespaces
-    if (![BuildInWalletPeerName.IMTOKEN].includes(brandName)) {
-      params.optionalNamespaces = {
-        [`eip155:${chainId}`]: {
-          methods: ['wallet_switchEthereumChain'],
-          events: []
-        }
-      };
-    }
 
     const { uri, approval } = await this.client.connect(params);
 

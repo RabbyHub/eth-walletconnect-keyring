@@ -1,26 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkBrandName = exports.getBuildInBrandName = exports.sanitizeHex = exports.getRequiredNamespaces = exports.getSupportedEventsByNamespace = exports.getSupportedMethodsByNamespace = exports.DEFAULT_EIP_155_EVENTS = exports.DEFAULT_EIP155_METHODS = exports.parseNamespaces = exports.getNamespacesFromChains = void 0;
+exports.checkBrandName = exports.getBuildInBrandName = exports.sanitizeHex = exports.getNamespaces = exports.DEFAULT_EIP_155_EVENTS = exports.parseNamespaces = void 0;
 const type_1 = require("./type");
-const DEFAULT_MAIN_CHAINS = [
-    'eip155:1',
-    'eip155:10',
-    'eip155:100',
-    'eip155:137',
-    'eip155:42161',
-    'eip155:42220'
-];
-const getNamespacesFromChains = (chains) => {
-    const supportedNamespaces = [];
-    chains.forEach((chainId) => {
-        const [namespace] = chainId.split(':');
-        if (!supportedNamespaces.includes(namespace)) {
-            supportedNamespaces.push(namespace);
-        }
-    });
-    return supportedNamespaces;
-};
-exports.getNamespacesFromChains = getNamespacesFromChains;
+const rpc_1 = require("./rpc");
 const parseNamespaces = (namespaces) => {
     const allNamespaceAccounts = Object.values(namespaces)
         .map((namespace) => namespace.accounts)
@@ -35,48 +17,21 @@ exports.parseNamespaces = parseNamespaces;
 /**
  * EIP155
  */
-var DEFAULT_EIP155_METHODS;
-(function (DEFAULT_EIP155_METHODS) {
-    DEFAULT_EIP155_METHODS["ETH_SEND_TRANSACTION"] = "eth_sendTransaction";
-    // ETH_SIGN_TRANSACTION = 'eth_signTransaction',
-    DEFAULT_EIP155_METHODS["PERSONAL_SIGN"] = "personal_sign";
-    DEFAULT_EIP155_METHODS["ETH_SIGN_TYPED_DATA"] = "eth_signTypedData";
-})(DEFAULT_EIP155_METHODS = exports.DEFAULT_EIP155_METHODS || (exports.DEFAULT_EIP155_METHODS = {}));
 var DEFAULT_EIP_155_EVENTS;
 (function (DEFAULT_EIP_155_EVENTS) {
     DEFAULT_EIP_155_EVENTS["ETH_CHAIN_CHANGED"] = "chainChanged";
     DEFAULT_EIP_155_EVENTS["ETH_ACCOUNTS_CHANGED"] = "accountsChanged";
 })(DEFAULT_EIP_155_EVENTS = exports.DEFAULT_EIP_155_EVENTS || (exports.DEFAULT_EIP_155_EVENTS = {}));
-const getSupportedMethodsByNamespace = (namespace) => {
-    switch (namespace) {
-        case 'eip155':
-            return Object.values(DEFAULT_EIP155_METHODS);
-        default:
-            throw new Error(`No default methods for namespace: ${namespace}`);
-    }
-};
-exports.getSupportedMethodsByNamespace = getSupportedMethodsByNamespace;
-const getSupportedEventsByNamespace = (namespace) => {
-    switch (namespace) {
-        case 'eip155':
-            return Object.values(DEFAULT_EIP_155_EVENTS);
-        default:
-            throw new Error(`No default events for namespace: ${namespace}`);
-    }
-};
-exports.getSupportedEventsByNamespace = getSupportedEventsByNamespace;
-const getRequiredNamespaces = (chains = DEFAULT_MAIN_CHAINS) => {
-    const selectedNamespaces = (0, exports.getNamespacesFromChains)(chains);
-    return Object.fromEntries(selectedNamespaces.map((namespace) => [
-        namespace,
-        {
-            methods: (0, exports.getSupportedMethodsByNamespace)(namespace),
-            chains: chains.filter((chain) => chain.startsWith(namespace)),
-            events: (0, exports.getSupportedEventsByNamespace)(namespace)
+const getNamespaces = (chains) => {
+    return {
+        eip155: {
+            methods: rpc_1.OPTIONAL_METHODS,
+            chains: chains.map((chain) => `eip155:${chain}`),
+            events: rpc_1.OPTIONAL_EVENTS
         }
-    ]));
+    };
 };
-exports.getRequiredNamespaces = getRequiredNamespaces;
+exports.getNamespaces = getNamespaces;
 function sanitizeHex(hex) {
     if (!hex)
         return;
