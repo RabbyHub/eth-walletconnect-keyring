@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkBrandName = exports.getBuildInBrandName = exports.sanitizeHex = exports.getNamespaces = exports.DEFAULT_EIP_155_EVENTS = exports.parseNamespaces = void 0;
+exports.checkBrandName = exports.getBuildInBrandName = exports.sanitizeHex = exports.getRequiredNamespaces = exports.getNamespaces = exports.DEFAULT_EIP_155_EVENTS = exports.parseNamespaces = void 0;
 const type_1 = require("./type");
 const rpc_1 = require("./rpc");
 const parseNamespaces = (namespaces) => {
@@ -32,6 +32,16 @@ const getNamespaces = (chains) => {
     };
 };
 exports.getNamespaces = getNamespaces;
+const getRequiredNamespaces = () => {
+    return {
+        eip155: {
+            methods: rpc_1.REQUIRED_METHODS,
+            chains: ['eip155:1'],
+            events: rpc_1.REQUIRED_EVENTS
+        }
+    };
+};
+exports.getRequiredNamespaces = getRequiredNamespaces;
 function sanitizeHex(hex) {
     if (!hex)
         return;

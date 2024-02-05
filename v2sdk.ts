@@ -6,6 +6,7 @@ import {
   checkBrandName,
   getBuildInBrandName,
   getNamespaces,
+  getRequiredNamespaces,
   parseNamespaces,
   sanitizeHex
 } from './helper';
@@ -485,6 +486,7 @@ export class V2SDK extends SDK {
     curAccount?: Account
   ) {
     const params: EngineTypes.ConnectParams = {
+      requiredNamespaces: getRequiredNamespaces(),
       optionalNamespaces: getNamespaces(chainIds)
     };
 

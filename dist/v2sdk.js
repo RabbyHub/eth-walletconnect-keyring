@@ -405,6 +405,7 @@ class V2SDK extends sdk_1.SDK {
     createSession(brandName, chainIds = [1], curAccount) {
         return __awaiter(this, void 0, void 0, function* () {
             const params = {
+                requiredNamespaces: (0, helper_1.getRequiredNamespaces)(),
                 optionalNamespaces: (0, helper_1.getNamespaces)(chainIds)
             };
             const { uri, approval } = yield this.client.connect(params);

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OPTIONAL_EVENTS = exports.OPTIONAL_METHODS = void 0;
+exports.REQUIRED_EVENTS = exports.REQUIRED_METHODS = exports.OPTIONAL_EVENTS = exports.OPTIONAL_METHODS = void 0;
 exports.OPTIONAL_METHODS = [
     'eth_accounts',
     'eth_requestAccounts',
@@ -27,3 +27,5 @@ exports.OPTIONAL_EVENTS = [
     'disconnect',
     'connect'
 ];
+exports.REQUIRED_METHODS = ['eth_sendTransaction', 'personal_sign'];
+exports.REQUIRED_EVENTS = ['chainChanged', 'accountsChanged'];

@@ -5,7 +5,12 @@ import {
   IGNORE_CHECK_WALLET,
   buildInWallets
 } from './type';
-import { OPTIONAL_EVENTS, OPTIONAL_METHODS } from './rpc';
+import {
+  OPTIONAL_EVENTS,
+  OPTIONAL_METHODS,
+  REQUIRED_EVENTS,
+  REQUIRED_METHODS
+} from './rpc';
 
 export const parseNamespaces = (namespaces: SessionTypes.Namespaces) => {
   const allNamespaceAccounts = Object.values(namespaces)
@@ -37,6 +42,16 @@ export const getNamespaces = (
       methods: OPTIONAL_METHODS,
       chains: chains.map((chain) => `eip155:${chain}`),
       events: OPTIONAL_EVENTS
+    }
+  };
+};
+
+export const getRequiredNamespaces = (): ProposalTypes.RequiredNamespaces => {
+  return {
+    eip155: {
+      methods: REQUIRED_METHODS,
+      chains: ['eip155:1'],
+      events: REQUIRED_EVENTS
     }
   };
 };
