@@ -5,6 +5,7 @@ import { Account, COMMON_WALLETCONNECT, ConstructorOptions } from './type';
 import { isAddress } from 'web3-utils';
 import { addHexPrefix } from 'ethereumjs-util';
 import { TypedTransaction } from '@ethereumjs/tx';
+import { MetaMaskSDK } from './metamaskSDK';
 
 export class WalletConnectKeyring extends EventEmitter {
   static type = 'WalletConnect';
@@ -15,6 +16,7 @@ export class WalletConnectKeyring extends EventEmitter {
   _accounts: Account[] = [];
   accountToAdd: Account | null = null;
   v2Whitelist: string[] = [];
+  metamaskSDK: MetaMaskSDK;
 
   get accounts() {
     return this._accounts;
@@ -24,6 +26,7 @@ export class WalletConnectKeyring extends EventEmitter {
     this._accounts = accounts;
     this.v1SDK.accounts = accounts;
     this.v2SDK.accounts = accounts;
+    this.metamaskSDK.accounts = accounts;
   }
 
   constructor(opts: ConstructorOptions) {
@@ -31,6 +34,7 @@ export class WalletConnectKeyring extends EventEmitter {
     this.v2Whitelist = opts.v2Whitelist;
     this.v1SDK = new V1SDK(opts);
     this.v2SDK = new V2SDK(opts);
+    this.metamaskSDK = new MetaMaskSDK(opts);
   }
 
   serialize() {
@@ -53,6 +57,9 @@ export class WalletConnectKeyring extends EventEmitter {
   };
 
   getSDK(brandName: string) {
+    if (brandName === 'MetaMask') {
+      return this.metamaskSDK;
+    }
     if (this.v2Whitelist.includes(brandName)) {
       return this.v2SDK;
     }

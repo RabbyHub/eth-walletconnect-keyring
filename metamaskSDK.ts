@@ -1,0 +1,753 @@
+// @ts-nocheck
+import { MetaMaskSDK as MMSDK, MetaMaskSDKOptions } from '@metamask/sdk';
+import { IClientMeta } from '@rabby-wallet/wc-types';
+import {
+  TypedTransaction,
+  JsonTx,
+  Transaction,
+  FeeMarketEIP1559Transaction
+} from '@ethereumjs/tx';
+import {
+  bufferToHex,
+  convertToBigint,
+  getChainId,
+  isBrowser,
+  wait
+} from './utils';
+import { SDK } from './sdk';
+import { sanitizeHex } from './helper';
+import {
+  WALLETCONNECT_STATUS_MAP,
+  WALLETCONNECT_SESSION_STATUS_MAP,
+  BuildInWalletPeerName,
+  IGNORE_CHECK_WALLET,
+  Account,
+  ConstructorOptions
+} from './type';
+
+type ValueOf<T> = T[keyof T];
+
+type ConnectPayload = {
+  params: {
+    accounts: string[];
+    chainId: number;
+  }[];
+};
+
+interface Connector {
+  connector: MMSDK;
+  status: ValueOf<typeof WALLETCONNECT_STATUS_MAP>;
+  networkDelay: number;
+  brandName: string;
+  chainId?: number;
+  sessionStatus?: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP;
+  preSessionStatus?: keyof typeof WALLETCONNECT_SESSION_STATUS_MAP;
+  peerMeta: IClientMeta;
+  silent?: boolean;
+}
+
+export class MetaMaskSDK extends SDK {
+  accounts: Account[] = [];
+  accountToAdd: Account | null = null;
+  resolvePromise: null | ((value: any) => void) = null;
+  rejectPromise: null | ((value: any) => void) = null;
+  onAfterConnect: null | ((err?: any, payload?: any) => void) = null;
+  onDisconnect: null | ((err: any, payload: any) => void) = null;
+  currentConnectStatus: number = WALLETCONNECT_STATUS_MAP.PENDING;
+  maxDuration = 1800000; // 30 mins hour by default
+  metamaskOptions: MetaMaskSDKOptions;
+  currentConnector: Connector | null = null;
+  connectors: Record<string, Connector> = {};
+  currentConnectParams: any = null;
+
+  version = 3;
+
+  constructor(opts: ConstructorOptions) {
+    super();
+    this.accounts = opts.accounts || [];
+    this.metamaskOptions = opts.metamask!;
+  }
+
+  initConnector = async (brandName: string) => {
+    let address: string | null = null;
+    const connector = await this.createConnector(brandName);
+
+    this.onAfterConnect = (error, payload: ConnectPayload) => {
+      const [account] = payload.params[0].accounts;
+      address = account;
+      const lowerAddress = address!.toLowerCase();
+      const conn = this.connectors[`${brandName}-${lowerAddress}`];
+
+      this.currentConnector = this.connectors[`${brandName}-${lowerAddress}`] =
+        {
+          ...conn,
+          status: WALLETCONNECT_STATUS_MAP.CONNECTED,
+          chainId: payload.params[0].chainId,
+          brandName,
+          sessionStatus: 'CONNECTED'
+        } as Connector;
+
+      this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, null, {
+        ...payload.params[0],
+        account
+      });
+    };
+    this.onDisconnect = (error, payload) => {
+      if (address) {
+        const connector =
+          this.connectors[`${brandName}-${address.toLowerCase()}`];
+        if (connector) {
+          this._closeConnector(connector.connector, address, brandName);
+        }
+      }
+      this.updateCurrentStatus(
+        WALLETCONNECT_STATUS_MAP.FAILD,
+        null,
+        error || payload.params[0]
+      );
+    };
+
+    this.emit('inited', connector.getUniversalLink());
+
+    return {
+      ...connector,
+      uri: connector.getUniversalLink()
+    };
+  };
+
+  getConnectorInfoByClientId(clientId: string) {
+    // const connectorKey = Object.keys(this.connectors).find(
+    //   (key) => this.connectors[key]?.connector?.clientId === clientId
+    // );
+    // if (!connectorKey) {
+    //   return;
+    // }
+    // const [brandName, address] = connectorKey.split('-');
+    // const account = this.accounts.find(
+    //   (acc) =>
+    //     acc.address.toLowerCase() === address.toLowerCase() &&
+    //     acc.brandName === brandName
+    // )!;
+    // return {
+    //   brandName,
+    //   address,
+    //   connectorKey,
+    //   account
+    // };
+  }
+
+  createConnector = async (brandName: string, curAccount?: Account) => {
+    const connector = new MMSDK(this.metamaskOptions);
+
+    connector.on('connecting', (data) => {
+      console.log('connecting', data);
+    });
+    connector.on('_initialized', (data) => {
+      console.log('_initialized', data);
+    });
+    connector.on('accountsChanged', (data) => {
+      console.log('accountsChanged', data);
+    });
+
+    connector.on('connect', ({ chainId }) => {
+      console.log('connect', chainId);
+      // if (payload?.params[0]?.accounts) {
+      //   const [account] = payload.params[0].accounts;
+      //   const buildInBrand = this.getBuildInBrandName(
+      //     brandName,
+      //     payload.params[0].peerMeta?.name,
+      //     // if is old account and is desktop, should ignore check
+      //     !!curAccount
+      //   );
+      //   const conn = (this.connectors[
+      //     `${buildInBrand}-${account.toLowerCase()}`
+      //   ] = {
+      //     connector,
+      //     status: connector.connected
+      //       ? WALLETCONNECT_STATUS_MAP.CONNECTED
+      //       : WALLETCONNECT_STATUS_MAP.PENDING,
+      //     chainId: payload?.params[0]?.chainId,
+      //     brandName: buildInBrand,
+      //     sessionStatus: 'CONNECTED',
+      //     peerMeta: payload?.params[0]?.peerMeta
+      //   } as Connector);
+      //   setTimeout(() => {
+      //     this._closeConnector(connector, account, buildInBrand);
+      //   }, this.maxDuration);
+      //   // check brandName
+      //   if (
+      //     !COMMON_WALLETCONNECT.includes(buildInBrand) &&
+      //     !this._checkBrandName(buildInBrand, payload)
+      //   ) {
+      //     conn.sessionStatus = 'BRAND_NAME_ERROR';
+      //     this.updateSessionStatus('BRAND_NAME_ERROR', {
+      //       address: curAccount?.address || account,
+      //       brandName: curAccount?.brandName || buildInBrand
+      //     });
+      //     this._close(account, buildInBrand, true);
+      //     return;
+      //   }
+      //   if (curAccount) {
+      //     if (
+      //       account.toLowerCase() !== curAccount?.address.toLowerCase() ||
+      //       buildInBrand !== curAccount?.brandName
+      //     ) {
+      //       conn.sessionStatus = 'ACCOUNT_ERROR';
+      //       this.updateSessionStatus('ACCOUNT_ERROR', curAccount);
+      //       this._close(account, buildInBrand, true);
+      //       return;
+      //     }
+      //   }
+      //   this.updateSessionStatus('CONNECTED', {
+      //     address: account,
+      //     brandName: buildInBrand,
+      //     realBrandName: conn.peerMeta?.name
+      //   });
+      //   this.emit('sessionAccountChange', {
+      //     address: account,
+      //     brandName: buildInBrand,
+      //     chainId: conn.chainId
+      //   });
+      //   this.currentConnector = conn;
+      //   this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, null, {
+      //     ...payload.params[0],
+      //     account
+      //   });
+      // }
+      // this.currentConnectParams = [error, payload];
+    });
+
+    // connector.on(
+    //   'session_update',
+    //   (
+    //     error,
+    //     payload: {
+    //       event: string;
+    //       params: {
+    //         accounts: string[];
+    //         chainId: number;
+    //       }[];
+    //     }
+    //   ) => {
+    //     const data = this.getConnectorInfoByClientId(connector.clientId);
+    //     if (!data) return;
+    //     const { connectorKey, address: _address, brandName: _brandName } = data;
+    //     const _chainId = this.connectors[connectorKey].chainId;
+    //     const updateAddress = payload.params[0].accounts[0];
+    //     const updateChain = payload.params[0].chainId;
+
+    //     if (updateAddress.toLowerCase() !== _address.toLowerCase()) {
+    //       this.connectors[connectorKey].sessionStatus = 'ACCOUNT_ERROR';
+    //       this.updateSessionStatus('ACCOUNT_ERROR', {
+    //         address: _address,
+    //         brandName: _brandName
+    //       });
+    //     } else {
+    //       this.connectors[connectorKey].sessionStatus = 'CONNECTED';
+    //       this.updateSessionStatus('CONNECTED', {
+    //         address: _address,
+    //         brandName: _brandName
+    //       });
+    //     }
+
+    //     this.emit('sessionAccountChange', {
+    //       address: _address,
+    //       brandName: _brandName,
+    //       chainId: updateChain
+    //     });
+    //     this.connectors[connectorKey].chainId = updateChain;
+    //   }
+    // );
+
+    // connector.on('disconnect', (error, payload) => {
+    //   if (payload.params[0]?.message.toLowerCase().includes('rejected')) {
+    //     this.updateSessionStatus('REJECTED');
+    //     return;
+    //   }
+    //   const data = this.getConnectorInfoByClientId(connector.clientId);
+    //   if (!data) return;
+    //   const { silent } = this.connectors[data.connectorKey];
+    //   if (!silent) {
+    //     this.connectors[data.connectorKey].sessionStatus = 'DISCONNECTED';
+    //     this.updateSessionStatus('DISCONNECTED', {
+    //       address: data.address,
+    //       brandName: data.brandName
+    //     });
+    //   }
+    //   this.onDisconnect && this.onDisconnect(error, payload);
+    // });
+
+    await connector.init();
+    await connector.connect();
+
+    return connector;
+  };
+
+  closeConnector: SDK['closeConnector'] = async (account: Account, silent) => {
+    const { brandName, address } = account;
+    const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
+    this._closeConnector(connector.connector, address, brandName, silent);
+  };
+
+  private _closeConnector = async (
+    connector: MMSDK,
+    address: string,
+    brandName: string,
+    // don't broadcast close messages
+    silent?: boolean
+  ) => {
+    // try {
+    //   this.connectors[`${brandName}-${address.toLowerCase()}`].silent = silent;
+    //   connector?.transportClose();
+    //   if (connector?.connected) {
+    //     await connector.killSession();
+    //   }
+    // } catch (e) {
+    //   // NOTHING
+    // }
+    // if (address) {
+    //   delete this.connectors[`${brandName}-${address.toLowerCase()}`];
+    // }
+  };
+
+  init = async (address: string, brandName: string) => {
+    if (isBrowser() && typeof localStorage !== 'undefined') {
+      // always clear walletconnect cache
+      localStorage.removeItem('walletconnect');
+    }
+
+    const account = this.accounts.find(
+      (acc) =>
+        acc.address.toLowerCase() === address.toLowerCase() &&
+        acc.brandName === brandName
+    );
+    let connector;
+    if (account) {
+      const lowerAddress = account?.address.toLowerCase();
+      connector = this.connectors[`${brandName}-${lowerAddress}`];
+      if (!connector?.connector?.connected) {
+        const newConnector = await this.createConnector(brandName, account);
+        connector = {
+          ...this.connectors[`${brandName}-${lowerAddress}`],
+          connector: newConnector,
+          status: WALLETCONNECT_STATUS_MAP.PENDING
+        };
+      }
+    }
+
+    // make sure the connector is the latest one before trigger onAfterConnect
+    this.currentConnector = connector;
+
+    if (connector?.connector?.connected) {
+      const account = this.accounts.find(
+        (acc) =>
+          acc.address.toLowerCase() === address.toLowerCase() &&
+          acc.brandName === brandName
+      )!;
+      connector.status = WALLETCONNECT_STATUS_MAP.CONNECTED;
+      this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, account);
+      this.onAfterConnect?.(null, {
+        params: [{ accounts: [account.address], chainId: connector.chainId }]
+      });
+    } else if (connector) {
+      connector.status = WALLETCONNECT_STATUS_MAP.PENDING;
+    }
+
+    const uri = connector?.getUniversalLink();
+    if (uri) {
+      this.emit('inited', uri);
+    }
+
+    return {
+      ...connector,
+      uri
+    };
+  };
+
+  getConnectorStatus = (address: string, brandName: string) => {
+    const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
+    if (connector) {
+      return connector.status;
+    }
+    return null;
+  };
+
+  // pull the transaction current state, then resolve or reject
+  async signTransaction(
+    address,
+    transaction: TypedTransaction,
+    { brandName = 'JADE' }: { brandName: string }
+  ) {
+    const account = this.accounts.find(
+      (acct) =>
+        acct.address.toLowerCase() === address.toLowerCase() &&
+        acct.brandName === brandName
+    );
+    if (!account) {
+      throw new Error('Can not find this address');
+    }
+
+    const txData: JsonTx = {
+      to: transaction.to!.toString(),
+      value: convertToBigint(transaction.value),
+      data: bufferToHex(transaction.data),
+      nonce: convertToBigint(transaction.nonce),
+      gasLimit: convertToBigint(transaction.gasLimit),
+      gasPrice:
+        typeof (transaction as Transaction).gasPrice !== 'undefined'
+          ? convertToBigint((transaction as Transaction).gasPrice)
+          : convertToBigint(
+              (transaction as FeeMarketEIP1559Transaction).maxFeePerGas
+            )
+    };
+    const txChainId = getChainId(transaction.common);
+    this.onAfterConnect = async (error?, payload?) => {
+      if (error) {
+        this.updateCurrentStatus(
+          WALLETCONNECT_STATUS_MAP.FAILD,
+          account,
+          error
+        );
+        return;
+      }
+
+      if (!this.currentConnector) throw new Error('No connector avaliable');
+
+      this.updateCurrentStatus(
+        WALLETCONNECT_STATUS_MAP.CONNECTED,
+        account,
+        payload
+      );
+
+      if (payload) {
+        const { accounts, chainId } = payload.params[0];
+        if (
+          accounts[0].toLowerCase() !== address.toLowerCase() ||
+          chainId !== txChainId
+        ) {
+          this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.FAILD, account, {
+            message: 'Wrong address or chainId',
+            code:
+              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001
+          });
+          return;
+        }
+        this.currentConnector.chainId = chainId;
+      }
+      try {
+        const result = await this.currentConnector.connector
+          .getProvider()
+          .request({
+            method: 'eth_sendTransaction',
+            params: [
+              {
+                data: this._normalize(txData.data),
+                from: address,
+                gas: this._normalize(txData.gasLimit),
+                gasPrice: this._normalize(txData.gasPrice),
+                nonce: this._normalize(txData.nonce),
+                to: this._normalize(txData.to),
+                value: this._normalize(txData.value) || '0x0' // prevent 0x
+              }
+            ]
+          });
+        this.resolvePromise!(result);
+        this.updateCurrentStatus(
+          WALLETCONNECT_STATUS_MAP.SIBMITTED,
+          account,
+          result
+        );
+      } catch (e) {
+        this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.REJECTED, account, e);
+      }
+    };
+
+    this.onDisconnect = (error, payload) => {
+      if (!this.currentConnector) throw new Error('No connector avaliable');
+      this.updateCurrentStatus(
+        WALLETCONNECT_STATUS_MAP.FAILD,
+        error || payload.params[0]
+      );
+      this._closeConnector(this.currentConnector.connector, address, brandName);
+    };
+
+    await this.init(account.address, account.brandName);
+
+    return new Promise((resolve, reject) => {
+      this.resolvePromise = resolve;
+      this.rejectPromise = reject;
+    });
+  }
+
+  async signPersonalMessage(
+    address: string,
+    message: string,
+    { brandName = 'JADE' }: { brandName: string }
+  ) {
+    const account = this.accounts.find(
+      (acct) =>
+        acct.address.toLowerCase() === address.toLowerCase() &&
+        acct.brandName === brandName
+    );
+    if (!account) {
+      throw new Error('Can not find this address');
+    }
+
+    this.onAfterConnect = async (error?, payload?) => {
+      if (error) {
+        this.updateCurrentStatus(
+          WALLETCONNECT_STATUS_MAP.FAILD,
+          account,
+          error
+        );
+        return;
+      }
+      if (!this.currentConnector) throw new Error('No connector avaliable');
+      const { accounts } = payload.params[0];
+      if (payload) {
+        if (accounts[0].toLowerCase() !== address.toLowerCase()) {
+          this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.FAILD, account, {
+            message: 'Wrong address or chainId',
+            code:
+              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001
+          });
+          return;
+        }
+      }
+      try {
+        this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, payload);
+
+        const result = await this.currentConnector.connector
+          .getProvider()
+          .request({
+            method: 'personal_sign',
+            params: [message, address]
+          });
+        this.resolvePromise!(result);
+        this.updateCurrentStatus(
+          WALLETCONNECT_STATUS_MAP.SIBMITTED,
+          account,
+          result
+        );
+      } catch (e) {
+        this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.REJECTED, account, e);
+      }
+    };
+
+    this.onDisconnect = (error, payload) => {
+      if (!this.currentConnector) throw new Error('No connector avaliable');
+
+      this.updateCurrentStatus(
+        WALLETCONNECT_STATUS_MAP.FAILD,
+        error || payload.params[0]
+      );
+      this._closeConnector(this.currentConnector.connector, address, brandName);
+    };
+
+    await this.init(account.address, account.brandName);
+
+    return new Promise((resolve) => {
+      this.resolvePromise = resolve;
+    });
+  }
+
+  async signTypedData(
+    address: string,
+    data,
+    { brandName = 'JADE' }: { brandName: string }
+  ) {
+    const account = this.accounts.find(
+      (acct) =>
+        acct.address.toLowerCase() === address.toLowerCase() &&
+        acct.brandName === brandName
+    );
+    if (!account) {
+      throw new Error('Can not find this address');
+    }
+
+    this.onAfterConnect = async (error, payload) => {
+      if (error) {
+        this.updateCurrentStatus(
+          WALLETCONNECT_STATUS_MAP.FAILD,
+          account,
+          error
+        );
+        return;
+      }
+
+      if (!this.currentConnector) throw new Error('No connector avaliable');
+
+      if (payload) {
+        const { accounts } = payload.params[0];
+        if (accounts[0].toLowerCase() !== address.toLowerCase()) {
+          this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.FAILD, account, {
+            message: 'Wrong address or chainId',
+            code:
+              accounts[0].toLowerCase() === address.toLowerCase() ? 1000 : 1001
+          });
+          return;
+        }
+      }
+
+      try {
+        this.updateCurrentStatus(
+          WALLETCONNECT_STATUS_MAP.CONNECTED,
+          account,
+          payload
+        );
+
+        const result = await this.currentConnector.connector
+          .getProvider()
+          .request({
+            method: 'eth_signTypedData',
+            params: [
+              address,
+              typeof data === 'string' ? data : JSON.stringify(data)
+            ]
+          });
+        this.resolvePromise!(result);
+        this.updateCurrentStatus(
+          WALLETCONNECT_STATUS_MAP.SIBMITTED,
+          account,
+          result
+        );
+      } catch (e) {
+        this.updateCurrentStatus(WALLETCONNECT_STATUS_MAP.REJECTED, account, e);
+      }
+    };
+
+    this.onDisconnect = (error, payload) => {
+      if (!this.currentConnector) throw new Error('No connector avaliable');
+      this.updateCurrentStatus(
+        WALLETCONNECT_STATUS_MAP.FAILD,
+        account,
+        error || payload.params[0]
+      );
+      this._closeConnector(this.currentConnector.connector, address, brandName);
+    };
+
+    await this.init(account.address, account.brandName);
+
+    return new Promise((resolve) => {
+      this.resolvePromise = resolve;
+    });
+  }
+
+  _close(address: string, brandName: string, silent?: boolean) {
+    const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
+    if (connector) {
+      this._closeConnector(connector.connector, address, brandName, silent);
+    }
+  }
+
+  updateCurrentStatus(status: number, account: Account | null, payload?: any) {
+    if (
+      (status === WALLETCONNECT_STATUS_MAP.REJECTED ||
+        status === WALLETCONNECT_STATUS_MAP.FAILD) &&
+      (this.currentConnectStatus === WALLETCONNECT_STATUS_MAP.FAILD ||
+        this.currentConnectStatus === WALLETCONNECT_STATUS_MAP.REJECTED ||
+        this.currentConnectStatus === WALLETCONNECT_STATUS_MAP.SIBMITTED)
+    ) {
+      return;
+    }
+    this.currentConnectStatus = status;
+
+    const connector =
+      this.connectors[
+        `${account?.brandName}-${account?.address?.toLowerCase()}`
+      ];
+    if (connector) {
+      connector.status = status;
+    }
+
+    this.emit('statusChange', {
+      status,
+      account: account || {
+        address: payload?.account
+      },
+      payload: {
+        ...payload,
+        peer: {
+          metadata: payload?.peerMeta
+        }
+      }
+    });
+  }
+
+  updateSessionStatus: SDK['updateSessionStatus'] = (status, opt) => {
+    this.emit('sessionStatusChange', {
+      status,
+      ...opt
+    });
+  };
+
+  _normalize(str) {
+    return sanitizeHex(str);
+  }
+
+  _checkBrandName(brandName, payload) {
+    const name = payload.params[0].peerMeta?.name;
+    // just check if brandName is in name or name is in brandName
+    let lowerName = name?.toLowerCase() as string;
+    if (!lowerName) {
+      this.emit(
+        'error',
+        new Error(
+          '[WalletConnect] No peerMeta name ' +
+            JSON.stringify(payload.params[0].peerMeta)
+        )
+      );
+      lowerName = brandName;
+    }
+    const peerName = BuildInWalletPeerName[brandName]?.toLowerCase() as
+      | string
+      | undefined;
+    if (IGNORE_CHECK_WALLET.includes(brandName)) return true;
+
+    if (peerName?.includes(lowerName) || lowerName?.includes(peerName ?? '')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  getSessionStatus = (address: string, brandName: string) => {
+    const connector = this.connectors[`${brandName}-${address!.toLowerCase()}`];
+
+    if (!connector) {
+      return undefined;
+    }
+
+    return connector.sessionStatus;
+  };
+
+  getSessionAccount = (address: string, brandName: string) => {
+    const connector = this.connectors[`${brandName}-${address!.toLowerCase()}`];
+
+    if (!connector) {
+      return undefined;
+    }
+
+    return {
+      address,
+      brandName: connector.brandName,
+      chainId: connector.chainId
+    };
+  };
+
+  getSessionNetworkDelay = (address: string, brandName: string) => {
+    const connector = this.connectors[`${brandName}-${address.toLowerCase()}`];
+    if (connector) {
+      return connector.networkDelay;
+    }
+    return null;
+  };
+
+  resend = () => {
+    this.onAfterConnect?.(...this.currentConnectParams);
+  };
+
+  switchEthereumChain = () => {
+    throw new Error('Method not implemented.');
+  };
+}

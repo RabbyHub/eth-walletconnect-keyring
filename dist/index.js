@@ -19,6 +19,7 @@ const v2sdk_1 = require("./v2sdk");
 const type_1 = require("./type");
 const web3_utils_1 = require("web3-utils");
 const ethereumjs_util_1 = require("ethereumjs-util");
+const metamaskSDK_1 = require("./metamaskSDK");
 class WalletConnectKeyring extends events_1.default {
     constructor(opts) {
         super();
@@ -90,6 +91,7 @@ class WalletConnectKeyring extends events_1.default {
         this.v2Whitelist = opts.v2Whitelist;
         this.v1SDK = new v1sdk_1.V1SDK(opts);
         this.v2SDK = new v2sdk_1.V2SDK(opts);
+        this.metamaskSDK = new metamaskSDK_1.MetaMaskSDK(opts);
     }
     get accounts() {
         return this._accounts;
@@ -98,6 +100,7 @@ class WalletConnectKeyring extends events_1.default {
         this._accounts = accounts;
         this.v1SDK.accounts = accounts;
         this.v2SDK.accounts = accounts;
+        this.metamaskSDK.accounts = accounts;
     }
     serialize() {
         return Promise.resolve({
@@ -112,6 +115,9 @@ class WalletConnectKeyring extends events_1.default {
         });
     }
     getSDK(brandName) {
+        if (brandName === 'MetaMask') {
+            return this.metamaskSDK;
+        }
         if (this.v2Whitelist.includes(brandName)) {
             return this.v2SDK;
         }

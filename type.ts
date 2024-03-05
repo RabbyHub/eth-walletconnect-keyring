@@ -1,3 +1,4 @@
+import { MetaMaskSDKOptions } from '@metamask/sdk';
 import { CoreTypes } from '@walletconnect/types';
 
 export const WALLETCONNECT_STATUS_MAP = {
@@ -34,7 +35,7 @@ export interface ConstructorOptions {
   maxDuration?: number;
   projectId: string;
   v2Whitelist: string[];
-  chains: number[];
+  metamask?: MetaMaskSDKOptions;
 }
 
 export const COMMON_WALLETCONNECT = ['WALLETCONNECT', 'WalletConnect'];
