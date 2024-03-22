@@ -333,7 +333,12 @@ class V2SDK extends sdk_1.SDK {
                 // switch connection status?
                 return;
             }
-            const { uri } = yield this.initConnector(brandName, chainIds, account);
+            const chainIdsArr = !chainIds
+                ? [1]
+                : Array.isArray(chainIds)
+                    ? chainIds
+                    : [chainIds];
+            const { uri } = yield this.initConnector(brandName, chainIdsArr, account);
             return { uri };
         });
     }

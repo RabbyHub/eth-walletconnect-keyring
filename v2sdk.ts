@@ -346,7 +346,7 @@ export class V2SDK extends SDK {
   }
 
   // initialize or find the session
-  async init(address: string, brandName: string, chainIds?: number[]) {
+  async init(address: string, brandName: string, chainIds?: number[] | number) {
     const account = this.findAccount({ address, brandName });
 
     if (!account) {
@@ -361,7 +361,12 @@ export class V2SDK extends SDK {
       return;
     }
 
-    const { uri } = await this.initConnector(brandName, chainIds, account);
+    const chainIdsArr = !chainIds
+      ? [1]
+      : Array.isArray(chainIds)
+      ? chainIds
+      : [chainIds];
+    const { uri } = await this.initConnector(brandName, chainIdsArr, account);
 
     return { uri };
   }
