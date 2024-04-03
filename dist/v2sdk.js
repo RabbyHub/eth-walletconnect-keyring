@@ -114,7 +114,10 @@ class V2SDK extends sdk_1.SDK {
                     });
                 }
                 if (params.event.name === helper_1.DEFAULT_EIP_155_EVENTS.ETH_ACCOUNTS_CHANGED) {
-                    const payloadAddress = params.event.data[0].split(':')[2];
+                    const accountStr = params.event.data[0];
+                    const payloadAddress = accountStr.includes(':')
+                        ? accountStr.split(':')[2]
+                        : accountStr;
                     if (payloadAddress.toLowerCase() !== (data === null || data === void 0 ? void 0 : data.address.toLowerCase())) {
                         this.updateSessionStatus('ACCOUNT_ERROR', {
                             address: data.address,
