@@ -83,6 +83,7 @@ class V2SDK extends sdk_1.SDK {
     initSDK() {
         return __awaiter(this, void 0, void 0, function* () {
             this.loading = true;
+            this.client = undefined;
             this.client = yield sign_client_1.default.init({
                 projectId: this.options.projectId,
                 metadata: this.options.clientMeta
@@ -135,6 +136,23 @@ class V2SDK extends sdk_1.SDK {
             this.client.on('session_expire', (session) => {
                 this._closeConnector(session);
             });
+            const listenerJwtError = () => {
+                var _a;
+                (_a = this.client) === null || _a === void 0 ? void 0 : _a.core.relayer.provider.once('error', (e) => __awaiter(this, void 0, void 0, function* () {
+                    var _b;
+                    // error code 3000 meaning the jwt token is expired, need to re-init the client
+                    // only appear in connect method
+                    if (e.message.includes('3000')) {
+                        yield this.initSDK();
+                        (_b = this.onAfterSessionCreated) === null || _b === void 0 ? void 0 : _b.call(this, '');
+                        console.log('jwt token is expired');
+                    }
+                    else {
+                        listenerJwtError();
+                    }
+                }));
+            };
+            listenerJwtError();
         });
     }
     signTransaction(address, transaction, { brandName = 'JADE' }) {
@@ -366,10 +384,13 @@ class V2SDK extends sdk_1.SDK {
     // initialize the connector
     initConnector(brandName, chainIds, account) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.waitInitClient();
-            const uri = yield this.createSession(brandName, chainIds, account);
-            this.emit('inited', uri);
-            return { uri };
+            const run = (this.onAfterSessionCreated = () => __awaiter(this, void 0, void 0, function* () {
+                yield this.waitInitClient();
+                const uri = yield this.createSession(brandName, chainIds, account);
+                this.emit('inited', uri);
+                return { uri };
+            }));
+            return run();
         });
     }
     scanAccount() {
