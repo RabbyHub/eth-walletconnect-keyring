@@ -52,6 +52,7 @@ export class V2SDK extends SDK {
 
   async initSDK() {
     this.loading = true;
+    this.client = undefined as any;
     this.client = await SignClient.init({
       projectId: this.options.projectId,
       metadata: this.options.clientMeta
@@ -108,6 +109,22 @@ export class V2SDK extends SDK {
     this.client.on('session_expire', (session) => {
       this._closeConnector(session);
     });
+
+    const listenerJwtError = () => {
+      this.client?.core.relayer.provider.once('error', async (e) => {
+        // error code 3000 meaning the jwt token is expired, need to re-init the client
+        // only appear in connect method
+        if (e.message.includes('3000')) {
+          await this.initSDK();
+          this.onAfterSessionCreated?.('');
+          console.log('jwt token is expired');
+        } else {
+          listenerJwtError();
+        }
+      });
+    };
+
+    listenerJwtError();
   }
 
   async signTransaction(
@@ -397,12 +414,16 @@ export class V2SDK extends SDK {
     chainIds?: number[],
     account?: Account
   ) {
-    await this.waitInitClient();
+    const run = (this.onAfterSessionCreated = async () => {
+      await this.waitInitClient();
 
-    const uri = await this.createSession(brandName, chainIds, account);
-    this.emit('inited', uri);
+      const uri = await this.createSession(brandName, chainIds, account);
+      this.emit('inited', uri);
 
-    return { uri };
+      return { uri };
+    });
+
+    return run();
   }
 
   async scanAccount() {
