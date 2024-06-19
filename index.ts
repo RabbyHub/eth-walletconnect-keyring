@@ -77,7 +77,10 @@ export class WalletConnectKeyring extends EventEmitter {
       const sdk = this.getSDK(this.accountToAdd.brandName);
       sdk.closeConnector(this.accountToAdd);
       sdk.updateSessionStatus('ADDRESS_DUPLICATE');
-      throw new Error("The address you're are trying to import is duplicate");
+      // throw new Error("The address you're are trying to import is duplicate");
+      const error = new Error(prefixedAddress);
+      error.name = 'DuplicateAccountError';
+      throw error;
     }
 
     this.accounts.push({
