@@ -59,7 +59,7 @@ class V2SDK extends sdk_1.SDK {
         };
         this.resend = () => {
             var _a;
-            (_a = this.onAfterSessionCreated) === null || _a === void 0 ? void 0 : _a.call(this, this.currentTopic);
+            (_a = this._resend) === null || _a === void 0 ? void 0 : _a.call(this, this.currentTopic);
         };
         this.closeConnector = (account, silent) => __awaiter(this, void 0, void 0, function* () {
             const topic = this.findTopic(account);
@@ -175,7 +175,7 @@ class V2SDK extends sdk_1.SDK {
                     : (0, utils_2.convertToBigint)(transaction.maxFeePerGas)
             };
             const txChainId = (0, utils_2.getChainId)(transaction.common);
-            this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
+            this._resend = this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
                 const payload = this.cached.getTopic(topic);
                 if (payload) {
                     if (payload.address.toLowerCase() !== address.toLowerCase()) {
@@ -250,7 +250,7 @@ class V2SDK extends sdk_1.SDK {
             if (!account) {
                 throw new Error('Can not find this address');
             }
-            this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
+            this._resend = this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
                 const payload = this.cached.getTopic(topic);
                 if (payload) {
                     if (payload.address.toLowerCase() !== address.toLowerCase()) {
@@ -297,7 +297,7 @@ class V2SDK extends sdk_1.SDK {
             if (!account) {
                 throw new Error('Can not find this address');
             }
-            this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
+            this._resend = this.onAfterSessionCreated = (topic) => __awaiter(this, void 0, void 0, function* () {
                 const payload = this.cached.getTopic(topic);
                 if (payload) {
                     if (payload.address.toLowerCase() !== address.toLowerCase()) {
@@ -351,6 +351,7 @@ class V2SDK extends sdk_1.SDK {
             if (topic) {
                 this.updateConnectionStatus(type_1.WALLETCONNECT_STATUS_MAP.CONNECTED, account);
                 (_a = this.onAfterSessionCreated) === null || _a === void 0 ? void 0 : _a.call(this, topic);
+                this.onAfterSessionCreated = null;
                 // switch connection status?
                 return;
             }
