@@ -553,7 +553,7 @@ export class V1SDK extends SDK {
     };
 
     this.onDisconnect = (error, payload) => {
-      if (!this.currentConnector) throw new Error('No connector avaliable');
+      if (!this.currentConnector) throw new Error('No connector available');
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.FAILD,
         error || payload.params[0]
@@ -592,7 +592,7 @@ export class V1SDK extends SDK {
         );
         return;
       }
-      if (!this.currentConnector) throw new Error('No connector avaliable');
+      if (!this.currentConnector) throw new Error('No connector available');
       const { accounts } = payload.params[0];
       if (payload) {
         if (accounts[0].toLowerCase() !== address.toLowerCase()) {
@@ -701,7 +701,7 @@ export class V1SDK extends SDK {
     };
 
     this.onDisconnect = (error, payload) => {
-      if (!this.currentConnector) throw new Error('No connector avaliable');
+      if (!this.currentConnector) throw new Error('No connector available');
       this.updateCurrentStatus(
         WALLETCONNECT_STATUS_MAP.FAILD,
         account,

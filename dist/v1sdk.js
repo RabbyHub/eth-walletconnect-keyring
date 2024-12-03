@@ -401,7 +401,7 @@ class V1SDK extends sdk_1.SDK {
                     return;
                 }
                 if (!this.currentConnector)
-                    throw new Error('No connector avaliable');
+                    throw new Error('No connector available');
                 this.updateCurrentStatus(type_1.WALLETCONNECT_STATUS_MAP.CONNECTED, account, payload);
                 if (payload) {
                     const { accounts, chainId } = payload.params[0];
@@ -434,7 +434,7 @@ class V1SDK extends sdk_1.SDK {
             });
             this.onDisconnect = (error, payload) => {
                 if (!this.currentConnector)
-                    throw new Error('No connector avaliable');
+                    throw new Error('No connector available');
                 this.updateCurrentStatus(type_1.WALLETCONNECT_STATUS_MAP.FAILD, error || payload.params[0]);
                 this._closeConnector(this.currentConnector.connector, address, brandName);
             };
@@ -458,7 +458,7 @@ class V1SDK extends sdk_1.SDK {
                     return;
                 }
                 if (!this.currentConnector)
-                    throw new Error('No connector avaliable');
+                    throw new Error('No connector available');
                 const { accounts } = payload.params[0];
                 if (payload) {
                     if (accounts[0].toLowerCase() !== address.toLowerCase()) {
@@ -484,7 +484,7 @@ class V1SDK extends sdk_1.SDK {
             });
             this.onDisconnect = (error, payload) => {
                 if (!this.currentConnector)
-                    throw new Error('No connector avaliable');
+                    throw new Error('No connector available');
                 this.updateCurrentStatus(type_1.WALLETCONNECT_STATUS_MAP.FAILD, error || payload.params[0]);
                 this._closeConnector(this.currentConnector.connector, address, brandName);
             };
@@ -507,7 +507,7 @@ class V1SDK extends sdk_1.SDK {
                     return;
                 }
                 if (!this.currentConnector)
-                    throw new Error('No connector avaliable');
+                    throw new Error('No connector available');
                 if (payload) {
                     const { accounts } = payload.params[0];
                     if (accounts[0].toLowerCase() !== address.toLowerCase()) {
@@ -533,7 +533,7 @@ class V1SDK extends sdk_1.SDK {
             });
             this.onDisconnect = (error, payload) => {
                 if (!this.currentConnector)
-                    throw new Error('No connector avaliable');
+                    throw new Error('No connector available');
                 this.updateCurrentStatus(type_1.WALLETCONNECT_STATUS_MAP.FAILD, account, error || payload.params[0]);
                 this._closeConnector(this.currentConnector.connector, address, brandName);
             };
