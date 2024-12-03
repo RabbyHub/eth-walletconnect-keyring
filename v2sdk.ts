@@ -33,7 +33,7 @@ export class V2SDK extends SDK {
   client!: SignClient;
   cached = new Cached();
   currentTopic?: string;
-  onAfterSessionCreated?: (topic: string) => void;
+  onAfterSessionCreated?: null | ((topic: string) => void);
   onDisconnect?: (err: any, session: SessionTypes.Struct) => void;
   resolvePromise?: (value: any) => void;
   rejectPromise?: (value: any) => void;
@@ -154,7 +154,7 @@ export class V2SDK extends SDK {
             )
     };
     const txChainId = getChainId(transaction.common);
-    this.onAfterSessionCreated = async (topic) => {
+    this._resend = this.onAfterSessionCreated = async (topic) => {
       const payload = this.cached.getTopic(topic);
       if (payload) {
         if (payload.address.toLowerCase() !== address.toLowerCase()) {
@@ -243,7 +243,7 @@ export class V2SDK extends SDK {
       throw new Error('Can not find this address');
     }
 
-    this.onAfterSessionCreated = async (topic) => {
+    this._resend = this.onAfterSessionCreated = async (topic) => {
       const payload = this.cached.getTopic(topic)!;
       if (payload) {
         if (payload.address.toLowerCase() !== address.toLowerCase()) {
@@ -304,7 +304,7 @@ export class V2SDK extends SDK {
       throw new Error('Can not find this address');
     }
 
-    this.onAfterSessionCreated = async (topic) => {
+    this._resend = this.onAfterSessionCreated = async (topic) => {
       const payload = this.cached.getTopic(topic)!;
       if (payload) {
         if (payload.address.toLowerCase() !== address.toLowerCase()) {
@@ -378,6 +378,7 @@ export class V2SDK extends SDK {
     if (topic) {
       this.updateConnectionStatus(WALLETCONNECT_STATUS_MAP.CONNECTED, account);
       this.onAfterSessionCreated?.(topic);
+      this.onAfterSessionCreated = null;
       // switch connection status?
       return;
     }
@@ -491,8 +492,10 @@ export class V2SDK extends SDK {
     }
   };
 
+  private _resend?: (topic: string) => void;
+
   resend = () => {
-    this.onAfterSessionCreated?.(this.currentTopic!);
+    this._resend?.(this.currentTopic!);
   };
 
   private findTopic(account?: Account) {
