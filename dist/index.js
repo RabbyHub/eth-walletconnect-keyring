@@ -112,6 +112,9 @@ class WalletConnectKeyring extends events_1.default {
         });
     }
     getSDK(brandName) {
+        if (!this.v2Whitelist) {
+            return this.v2SDK;
+        }
         if (this.v2Whitelist.includes(brandName)) {
             return this.v2SDK;
         }
