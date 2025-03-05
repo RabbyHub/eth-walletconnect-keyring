@@ -14,7 +14,7 @@ export class WalletConnectKeyring extends EventEmitter {
   v2SDK!: V2SDK;
   _accounts: Account[] = [];
   accountToAdd: Account | null = null;
-  v2Whitelist: string[] = [];
+  v2Whitelist?: string[] = [];
 
   get accounts() {
     return this._accounts;
@@ -53,6 +53,10 @@ export class WalletConnectKeyring extends EventEmitter {
   };
 
   getSDK(brandName: string) {
+    if (!this.v2Whitelist) {
+      return this.v2SDK;
+    }
+
     if (this.v2Whitelist.includes(brandName)) {
       return this.v2SDK;
     }
