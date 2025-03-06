@@ -18,7 +18,7 @@ const v1sdk_1 = require("./v1sdk");
 const v2sdk_1 = require("./v2sdk");
 const type_1 = require("./type");
 const web3_utils_1 = require("web3-utils");
-const ethereumjs_util_1 = require("ethereumjs-util");
+const util_1 = require("@ethereumjs/util");
 class WalletConnectKeyring extends events_1.default {
     constructor(opts) {
         super();
@@ -127,7 +127,7 @@ class WalletConnectKeyring extends events_1.default {
             if (!(0, web3_utils_1.isAddress)(this.accountToAdd.address)) {
                 throw new Error("The address you're are trying to import is invalid");
             }
-            const prefixedAddress = (0, ethereumjs_util_1.addHexPrefix)(this.accountToAdd.address);
+            const prefixedAddress = (0, util_1.addHexPrefix)(this.accountToAdd.address);
             if (this.accounts.find((acct) => {
                 var _a;
                 return acct.address.toLowerCase() === prefixedAddress.toLowerCase() &&
