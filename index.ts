@@ -3,7 +3,7 @@ import { V1SDK } from './v1sdk';
 import { V2SDK } from './v2sdk';
 import { Account, COMMON_WALLETCONNECT, ConstructorOptions } from './type';
 import { isAddress } from 'web3-utils';
-import { addHexPrefix } from 'ethereumjs-util';
+import { addHexPrefix } from '@ethereumjs/util';
 import { TypedTransaction } from '@ethereumjs/tx';
 
 export class WalletConnectKeyring extends EventEmitter {
